@@ -128,9 +128,13 @@
         <div class="panel" style="border-color:var(--gold)">
             <h4 style="color:var(--gold); margin-top:0;">IDENTITY OVERRIDE</h4>
             <input type="text" id="k-target-user" class="input-field" placeholder="PLAYER ID">
-            <select id="k-color-select" class="input-field" style="background: #222; border: 1px solid var(--gold); color: white;">
-                </select>
-            <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.kingSetColor()">FORCE CHANGE COLOR</button>
+            <select id="k-color-select" class="input-field" style="background: #222; border: 1px solid var(--gold); color: white;"></select>
+            <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.kingSetColor()">FORCE COLOR</button>
+            
+            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 10px;">
+                <input type="number" id="k-rb-val" class="input-field" placeholder="SET REBIRTH LVL">
+                <button class="action-btn" style="background:var(--pink); color:white;" onclick="App.kingSetRebirth()">FORCE REBIRTH</button>
+            </div>
         </div>
 
         <div class="panel" style="border-color:var(--gold)">
@@ -197,7 +201,7 @@ const App = {
     init(d) {
         this.u = d.name; this.gems = d.gems; this.rebirth = Number(d.rebirth) || 0; this.grade = 50; this.shopTab = 'normal';
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
-        this.generateColors(); // Generates King's 45 color palette
+        this.generateColors(); 
         setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
     getTag(rb) { if(rb >= 20) return 'tag-gold'; if(rb >= 10) return 'tag-pink'; if(rb >= 5) return 'tag-neon'; return ''; },
@@ -244,6 +248,14 @@ const App = {
         if(target) {
             DB.ref('users/' + target).update({ color: color })
             .then(() => alert("IDENTITY OVERRIDE SUCCESSFUL"));
+        }
+    },
+    kingSetRebirth() {
+        const target = document.getElementById('k-target-user').value.toUpperCase().trim();
+        const val = parseInt(document.getElementById('k-rb-val').value);
+        if(target && !isNaN(val)) {
+            DB.ref('users/' + target).update({ rebirth: val })
+            .then(() => alert("REBIRTH OVERRIDE SUCCESS: " + target + " is now RB " + val));
         }
     },
     setGrade(g) {
