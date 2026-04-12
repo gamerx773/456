@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V17.6</title>
+    <title>MATRIX: EVOLUTION V17.7</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -29,8 +29,8 @@
         .grade-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
         .grade-pill { padding: 10px 2px; border: 1px solid #444; border-radius: 8px; font-family: 'Orbitron'; font-size: 0.55rem; text-align: center; background: rgba(255,255,255,0.05); color: #888; }
         .grade-pill.active { border-color: var(--neon); color: var(--neon); background: rgba(0, 242, 255, 0.1); }
-        #q-text { font-size: 2.5rem; font-family: 'Orbitron'; color: var(--neon); text-align: center; margin: 10px 0; text-shadow: 0 0 15px var(--neon); min-height: 80px; display: flex; align-items: center; justify-content: center; }
-        .math-opt { width: 100%; padding: 20px 10px; border-radius: 12px; border: 2px solid var(--neon); background: rgba(0,242,255,0.05); color: white; font-family: 'Orbitron'; font-size: 1.8rem; margin-bottom: 8px; cursor: pointer; }
+        #q-text { font-size: 2.2rem; font-family: 'Orbitron'; color: var(--neon); text-align: center; margin: 10px 0; text-shadow: 0 0 15px var(--neon); min-height: 80px; display: flex; align-items: center; justify-content: center; }
+        .math-opt { width: 100%; padding: 20px 10px; border-radius: 12px; border: 2px solid var(--neon); background: rgba(0,242,255,0.05); color: white; font-family: 'Orbitron'; font-size: 1.5rem; margin-bottom: 8px; cursor: pointer; }
 
         /* KING & SHOP UI */
         .action-btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 900; background: var(--pink); color: white; font-family: 'Orbitron'; font-size: 0.8rem; margin: 4px 0; text-transform: uppercase; cursor: pointer; }
@@ -90,7 +90,7 @@
             <div id="gp-100" class="grade-pill" onclick="App.setGrade(100)">4-5</div>
             <div id="gp-150" class="grade-pill" onclick="App.setGrade(150)">6-7</div>
             <div id="gp-250" class="grade-pill" onclick="App.setGrade(250)">8-12</div>
-            <div id="gp-300" class="grade-pill" onclick="App.setGrade(300)">ADULT</div>
+            <div id="gp-400" class="grade-pill" onclick="App.setGrade(400)">ADULT</div>
         </div>
         <div id="q-text">...</div>
         <div id="opt-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
@@ -124,7 +124,6 @@
 
     <div id="screen-king" class="screen">
         <h3 style="color:var(--gold); text-align:center;">KING CONTROL</h3>
-        
         <div class="panel" style="border-color:var(--gold)">
             <h4 style="color:var(--gold); margin-top:0;">IDENTITY OVERRIDE</h4>
             <input type="text" id="k-target-user" class="input-field" placeholder="PLAYER ID (FOR COLOR)">
@@ -262,8 +261,6 @@ const App = {
                 document.getElementById('k-rb-user').value = '';
                 document.getElementById('k-rb-val').value = '';
             });
-        } else {
-            alert("INPUT TARGET AND RB LEVEL");
         }
     },
     setGrade(g) {
@@ -271,46 +268,59 @@ const App = {
         document.getElementById('gp-'+g).classList.add('active'); this.nextQ();
     },
     nextQ() {
-        let a, b, c, op, ans, display;
-        const type = rand(1, 2);
+        let ans, display;
+        const type = rand(1, 3);
 
-        if (this.grade === 50) { // K-1
-            a = rand(1, 12); b = rand(1, 8);
-            if (type === 1) { ans = a + b; op = '+'; }
-            else { a = Math.max(a, b); b = Math.min(a, b); ans = a - b; op = '-'; }
+        if (this.grade === 50) { 
+            let a = rand(1, 15), b = rand(1, 10);
+            if (type === 1) { ans = a + b; display = `${a} + ${b}`; }
+            else { a = Math.max(a, b); b = Math.min(a, b); ans = a - b; display = `${a} - ${b}`; }
         }
-        else if (this.grade === 75) { // 2-3
-            if (type === 1) { a = rand(21, 80); b = rand(11, 40); ans = a + b; op = '+'; }
-            else { ans = rand(2, 10); b = [2, 5, 10][rand(0, 2)]; a = ans * b; display = `${a} ÷ ${b}`; }
+        else if (this.grade === 75) { 
+            if (type === 1) { let a = rand(50, 200), b = rand(20, 150); ans = a + b; display = `${a} + ${b}`; }
+            else if (type === 2) { let a = rand(2, 9), b = rand(2, 5); ans = a * b; display = `${a} × ${b}`; }
+            else { let a = rand(100, 300), b = rand(10, 99); ans = a - b; display = `${a} - ${b}`; }
         }
-        else if (this.grade === 100) { // 4-5
-            if (type === 1) { ans = rand(3, 12); b = rand(3, 12); a = ans * b; op = '÷'; } 
-            else { a = rand(6, 12); b = rand(4, 12); ans = a * b; op = '×'; }
+        else if (this.grade === 100) { 
+            if (type === 1) { let a = rand(12, 35), b = rand(11, 25); ans = a * b; display = `${a} × ${b}`; }
+            else if (type === 2) { let b = rand(6, 12), ans_v = rand(12, 40); let a = b * ans_v; ans = ans_v; display = `${a} ÷ ${b}`; }
+            else { let a = (rand(10, 50)/10).toFixed(1), b = (rand(10, 50)/10).toFixed(1); ans = (parseFloat(a) + parseFloat(b)).toFixed(1); display = `${a} + ${b}`; }
         }
-        else if (this.grade === 150) { // 6-7
-            a = rand(5, 25); b = rand(30, 80);
-            if (type === 1) { ans = b - a; display = `X + ${a} = ${b}`; }
-            else { ans = rand(4, 12); a = rand(3, 9); b = a * ans; display = `${a}X = ${b}`; }
+        else if (this.grade === 150) { 
+            if (type === 1) { let a = rand(-20, -1), b = rand(5, 25); ans = a + b; display = `(${a}) + ${b}`; }
+            else if (type === 2) { let x = rand(5, 15), c = rand(2, 8), b = x * c; ans = x; display = `${c}x = ${b}`; }
+            else { let p = [10, 20, 25, 50][rand(0,3)], val = rand(1, 10) * 20; ans = (p/100)*val; display = `${p}% of ${val}`; }
         }
-        else if (this.grade === 250) { // 8-12
-            if (type === 1) { a = rand(4, 15); ans = a * a; display = `${a}² = ?`; }
+        else if (this.grade === 250) { 
+            if (type === 1) { let x = rand(2, 8), a = rand(2, 5), b = rand(5, 20), res = a*x + b; ans = x; display = `${a}x + ${b} = ${res}`; }
+            else if (type === 2) { let a = rand(4, 15); ans = a*a; display = `√${ans} = ?`; }
+            else { let a = rand(2, 5), b = rand(2, 4); ans = Math.pow(a, b); display = `${a}^${b}`; }
+        }
+        else { // New Adult Calculus/Matrix Logic
+            if (type === 1) { 
+                let c = rand(2, 5), e = rand(2, 4); 
+                ans = c * e; display = `d/dx ${c}x^${e} (at x=1)`; 
+            }
+            else if (type === 2) { 
+                let a = rand(1, 4), d = rand(1, 4), b = rand(1, 4), c = rand(1, 4);
+                ans = (a * d) - (b * c); display = `det [${a},${b}|${c},${d}]`;
+            }
             else { 
-                ans = rand(2, 10); a = rand(2, 5); c = rand(5, 20); b = (a * ans) + c;
-                display = `${a}X + ${c} = ${b}`;
+                let b = rand(2, 3), p = rand(2, 4);
+                let v = Math.pow(b, p); ans = p; display = `log${b}(${v}) = ?`;
             }
         }
-        else { // ADULT
-            a = rand(13, 99); b = rand(11, 21); ans = a * b; op = '×';
-        }
 
-        const pot = Math.floor(this.grade * (1 + this.rebirth * 0.3));
-        document.getElementById('q-text').innerText = display || `${a} ${op} ${b}`;
+        const rewards = { 50: 100, 75: 200, 100: 300, 150: 400, 250: 600, 400: 800 };
+        const pot = Math.floor((rewards[this.grade] || 100) * (1 + this.rebirth * 0.3));
+        document.getElementById('q-text').innerText = display;
         
         let options = new Set();
         options.add(ans);
         while(options.size < 4) {
-            let offset = rand(-10, 10);
-            if(offset !== 0) options.add(ans + offset);
+            let offset = (Math.random() > 0.5 ? 1 : -1) * rand(1, 10);
+            let fake = (typeof ans === 'string') ? (parseFloat(ans) + offset).toFixed(1) : ans + offset;
+            if(fake != ans) options.add(fake);
         }
 
         const grid = document.getElementById('opt-grid'); 
@@ -318,7 +328,7 @@ const App = {
         Array.from(options).sort(() => Math.random() - 0.5).forEach(o => {
             const btn = document.createElement('button'); btn.className = 'math-opt'; btn.innerText = o;
             btn.onclick = () => {
-                if (o === ans) { 
+                if (o == ans) { 
                     this.gems += pot; confetti({ particleCount: 30 }); 
                 } else { 
                     this.gems = Math.max(0, this.gems - pot); 
@@ -334,7 +344,7 @@ const App = {
         this.shopTab = t; this.drawShop();
     },
     drawShop() {
-        const cost = 1000 + (2500 * this.rebirth);
+        const cost = 1000 + (5000 * this.rebirth);
         document.getElementById('rb-cost-preview').innerText = `RB COST: ${cost.toLocaleString()} 💎`;
         document.getElementById('btn-rebirth').onclick = () => { if(this.gems >= cost) DB.ref('users/'+this.u).update({rebirth: this.rebirth+1, gems: 0}); };
         const list = document.getElementById('shop-list');
