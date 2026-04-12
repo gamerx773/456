@@ -30,7 +30,7 @@
         .grade-pill { padding: 10px 2px; border: 1px solid #444; border-radius: 8px; font-family: 'Orbitron'; font-size: 0.55rem; text-align: center; background: rgba(255,255,255,0.05); color: #888; }
         .grade-pill.active { border-color: var(--neon); color: var(--neon); background: rgba(0, 242, 255, 0.1); }
         #q-text { font-size: 2.5rem; font-family: 'Orbitron'; color: var(--neon); text-align: center; margin: 10px 0; text-shadow: 0 0 15px var(--neon); min-height: 80px; display: flex; align-items: center; justify-content: center; }
-        .math-opt { width: 100%; padding: 20px 10px; border-radius: 12px; border: 2px solid var(--neon); background: rgba(0,242,255,0.05); color: white; font-family: 'Orbitron'; font-size: 1.8rem; margin-bottom: 8px; }
+        .math-opt { width: 100%; padding: 20px 10px; border-radius: 12px; border: 2px solid var(--neon); background: rgba(0,242,255,0.05); color: white; font-family: 'Orbitron'; font-size: 1.8rem; margin-bottom: 8px; cursor: pointer; }
 
         /* KING & SHOP UI */
         .action-btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 900; background: var(--pink); color: white; font-family: 'Orbitron'; font-size: 0.8rem; margin: 4px 0; text-transform: uppercase; cursor: pointer; }
@@ -274,45 +274,52 @@ const App = {
         let a, b, c, op, ans, display;
         const type = rand(1, 2);
 
-        if (this.grade === 50) { // K-1: Addition/Subtraction within 20
+        if (this.grade === 50) { // K-1
             a = rand(1, 12); b = rand(1, 8);
             if (type === 1) { ans = a + b; op = '+'; }
             else { a = Math.max(a, b); b = Math.min(a, b); ans = a - b; op = '-'; }
         }
-        else if (this.grade === 75) { // 2-3: 2-Digit math & beginner times tables
+        else if (this.grade === 75) { // 2-3
             if (type === 1) { a = rand(21, 80); b = rand(11, 40); ans = a + b; op = '+'; }
-            else { ans = rand(2, 10); b = [2, 5, 10][rand(0, 2)]; a = ans * b; display = `${ans} × ${b}`; }
+            else { ans = rand(2, 10); b = [2, 5, 10][rand(0, 2)]; a = ans * b; display = `${a} ÷ ${b}`; }
         }
-        else if (this.grade === 100) { // 4-5: Hard Multi & Division
+        else if (this.grade === 100) { // 4-5
             if (type === 1) { ans = rand(3, 12); b = rand(3, 12); a = ans * b; op = '÷'; } 
             else { a = rand(6, 12); b = rand(4, 12); ans = a * b; op = '×'; }
         }
-        else if (this.grade === 150) { // 6-7: Pre-Algebra (Solve for X)
+        else if (this.grade === 150) { // 6-7
             a = rand(5, 25); b = rand(30, 80);
             if (type === 1) { ans = b - a; display = `X + ${a} = ${b}`; }
             else { ans = rand(4, 12); a = rand(3, 9); b = a * ans; display = `${a}X = ${b}`; }
         }
-        else if (this.grade === 250) { // 8-12: Squares & 2-Step Equations
+        else if (this.grade === 250) { // 8-12
             if (type === 1) { a = rand(4, 15); ans = a * a; display = `${a}² = ?`; }
             else { 
                 ans = rand(2, 10); a = rand(2, 5); c = rand(5, 20); b = (a * ans) + c;
                 display = `${a}X + ${c} = ${b}`;
             }
         }
-        else { // ADULT: Mental Math (Double Digits)
+        else { // ADULT
             a = rand(13, 99); b = rand(11, 21); ans = a * b; op = '×';
         }
 
         const pot = Math.floor(this.grade * (1 + this.rebirth * 0.3));
         document.getElementById('q-text').innerText = display || `${a} ${op} ${b}`;
         
-        const grid = document.getElementById('opt-grid'); grid.innerHTML = '';
-        [ans, ans + rand(1, 4), ans - rand(1, 4), ans + 10].sort(() => Math.random() - 0.5).forEach(o => {
+        let options = new Set();
+        options.add(ans);
+        while(options.size < 4) {
+            let offset = rand(-10, 10);
+            if(offset !== 0) options.add(ans + offset);
+        }
+
+        const grid = document.getElementById('opt-grid'); 
+        grid.innerHTML = '';
+        Array.from(options).sort(() => Math.random() - 0.5).forEach(o => {
             const btn = document.createElement('button'); btn.className = 'math-opt'; btn.innerText = o;
             btn.onclick = () => {
                 if (o === ans) { 
-                    this.gems += pot; 
-                    confetti({ particleCount: 30 }); 
+                    this.gems += pot; confetti({ particleCount: 30 }); 
                 } else { 
                     this.gems = Math.max(0, this.gems - pot); 
                 }
