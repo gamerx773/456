@@ -124,6 +124,15 @@
 
     <div id="screen-king" class="screen">
         <h3 style="color:var(--gold); text-align:center;">KING CONTROL</h3>
+        
+        <div class="panel" style="border-color:var(--gold)">
+            <h4 style="color:var(--gold); margin-top:0;">IDENTITY OVERRIDE</h4>
+            <input type="text" id="k-target-user" class="input-field" placeholder="PLAYER ID">
+            <select id="k-color-select" class="input-field" style="background: #222; border: 1px solid var(--gold); color: white;">
+                </select>
+            <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.kingSetColor()">FORCE CHANGE COLOR</button>
+        </div>
+
         <div class="panel" style="border-color:var(--gold)">
             <input type="text" id="k-msg" class="input-field" placeholder="GLOBAL BROADCAST">
             <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.sendBroadcast()">SEND BROADCAST</button>
@@ -138,6 +147,7 @@
             <input type="text" id="m-name" class="input-field" placeholder="ITEM NAME">
             <input type="text" id="m-icon" class="input-field" placeholder="ICON (EMOJI)">
             <input type="number" id="m-price" class="input-field" placeholder="PRICE">
+            <input type="number" id="m-stock" class="input-field" placeholder="STOCK" value="10">
             <select id="m-tier" class="input-field"><option value="normal">NORMAL</option><option value="crown">CROWN</option></select>
             <button class="action-btn" style="background:var(--neon); color:black;" onclick="App.forgeItem()">FORGE ITEM</button>
         </div>
@@ -187,6 +197,7 @@ const App = {
     init(d) {
         this.u = d.name; this.gems = d.gems; this.rebirth = Number(d.rebirth) || 0; this.grade = 50; this.shopTab = 'normal';
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
+        this.generateColors(); // Generates King's 45 color palette
         setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
     getTag(rb) { if(rb >= 20) return 'tag-gold'; if(rb >= 10) return 'tag-pink'; if(rb >= 5) return 'tag-neon'; return ''; },
@@ -196,6 +207,7 @@ const App = {
             this.gems = v.gems; this.rebirth = Number(v.rebirth) || 0;
             document.getElementById('gems-display').innerText = Math.floor(this.gems).toLocaleString();
             document.getElementById('rb-display').innerText = this.rebirth;
+            if(v.color) document.documentElement.style.setProperty('--neon', v.color);
         });
         DB.ref('system/broadcast').on('value', s => { document.getElementById('royal-banner').innerText = s.val() || "SYSTEM ONLINE"; });
         DB.ref('users').on('value', s => {
@@ -208,11 +220,31 @@ const App = {
                     d.worth = v; arr.push(d); 
                 }
             });
-            [...arr].sort((a,b)=>b.gems-a.gems).slice(0,8).forEach(u=>{ lg.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}">${u.name}</span><span>${Math.floor(u.gems).toLocaleString()}</span></div>`; });
-            [...arr].sort((a,b)=>b.worth-a.worth).slice(0,8).forEach(u=>{ lw.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}">${u.name}</span><span>${u.worth.toLocaleString()}</span></div>`; });
-            [...arr].sort((a,b)=>b.rb-a.rb).slice(0,8).forEach(u=>{ lr.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}">${u.name}</span><span>RB ${u.rb}</span></div>`; });
-            [...arr].sort((a,b)=>Number(b.timePlayed||0)-Number(a.timePlayed||0)).slice(0,8).forEach(u=>{ lt.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}">${u.name}</span><span>${u.timePlayed||0}m</span></div>`; });
+            [...arr].sort((a,b)=>b.gems-a.gems).slice(0,8).forEach(u=>{ lg.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${Math.floor(u.gems).toLocaleString()}</span></div>`; });
+            [...arr].sort((a,b)=>b.worth-a.worth).slice(0,8).forEach(u=>{ lw.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${u.worth.toLocaleString()}</span></div>`; });
+            [...arr].sort((a,b)=>b.rb-a.rb).slice(0,8).forEach(u=>{ lr.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>RB ${u.rb}</span></div>`; });
+            [...arr].sort((a,b)=>Number(b.timePlayed||0)-Number(a.timePlayed||0)).slice(0,8).forEach(u=>{ lt.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${u.timePlayed||0}m</span></div>`; });
         });
+    },
+    generateColors() {
+        const sel = document.getElementById('k-color-select');
+        if(!sel) return;
+        for(let i=0; i<360; i+=8) {
+            let hue = `hsl(${i}, 100%, 60%)`;
+            let opt = document.createElement('option');
+            opt.value = hue;
+            opt.innerText = `SPECTRUM V-${i}`;
+            opt.style.color = hue;
+            sel.appendChild(opt);
+        }
+    },
+    kingSetColor() {
+        const target = document.getElementById('k-target-user').value.toUpperCase().trim();
+        const color = document.getElementById('k-color-select').value;
+        if(target) {
+            DB.ref('users/' + target).update({ color: color })
+            .then(() => alert("IDENTITY OVERRIDE SUCCESSFUL"));
+        }
     },
     setGrade(g) {
         this.grade = g; document.querySelectorAll('.grade-pill').forEach(p => p.classList.remove('active'));
@@ -280,8 +312,8 @@ const App = {
     },
     restock(k) { DB.ref('system/shop/'+k+'/stock').transaction(s => (s||0) + 10); },
     forgeItem() {
-        const n=document.getElementById('m-name').value, i=document.getElementById('m-icon').value, p=parseInt(document.getElementById('m-price').value), t=document.getElementById('m-tier').value;
-        if(n && i && !isNaN(p)) { DB.ref('system/shop').push({name:n, icon:i, price:p, stock:10, tier:t}); alert("FORGED"); }
+        const n=document.getElementById('m-name').value, i=document.getElementById('m-icon').value, p=parseInt(document.getElementById('m-price').value), t=document.getElementById('m-tier').value, s=parseInt(document.getElementById('m-stock').value);
+        if(n && i && !isNaN(p)) { DB.ref('system/shop').push({name:n, icon:i, price:p, stock:s||10, tier:t}); alert("FORGED"); }
     },
     sendBroadcast() { const m = document.getElementById('k-msg').value.toUpperCase(); if(m) DB.ref('system/broadcast').set("👑 KING: " + m); },
     dispatchGems() {
