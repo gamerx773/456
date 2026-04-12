@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V17.6 </title>
+    <title>MATRIX: EVOLUTION V17.6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -127,13 +127,15 @@
         
         <div class="panel" style="border-color:var(--gold)">
             <h4 style="color:var(--gold); margin-top:0;">IDENTITY OVERRIDE</h4>
-            <input type="text" id="k-target-user" class="input-field" placeholder="PLAYER ID">
+            <input type="text" id="k-target-user" class="input-field" placeholder="PLAYER ID (FOR COLOR)">
             <select id="k-color-select" class="input-field" style="background: #222; border: 1px solid var(--gold); color: white;"></select>
             <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.kingSetColor()">FORCE COLOR</button>
             
-            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 10px;">
-                <input type="number" id="k-rb-val" class="input-field" placeholder="SET REBIRTH LVL">
-                <button class="action-btn" style="background:var(--pink); color:white;" onclick="App.kingSetRebirth()">FORCE REBIRTH</button>
+            <div style="border-top: 1px solid #333; margin-top: 15px; padding-top: 15px;">
+                <h4 style="color:var(--pink); margin-top:0;">REBIRTH SETTER</h4>
+                <input type="text" id="k-rb-user" class="input-field" placeholder="PLAYER ID (FOR RB)">
+                <input type="number" id="k-rb-val" class="input-field" placeholder="NEW RB LEVEL">
+                <button class="action-btn" style="background:var(--pink); color:white;" onclick="App.kingSetRebirth()">EXECUTE RB OVERRIDE</button>
             </div>
         </div>
 
@@ -251,11 +253,17 @@ const App = {
         }
     },
     kingSetRebirth() {
-        const target = document.getElementById('k-target-user').value.toUpperCase().trim();
+        const target = document.getElementById('k-rb-user').value.toUpperCase().trim();
         const val = parseInt(document.getElementById('k-rb-val').value);
         if(target && !isNaN(val)) {
             DB.ref('users/' + target).update({ rebirth: val })
-            .then(() => alert("REBIRTH OVERRIDE SUCCESS: " + target + " is now RB " + val));
+            .then(() => {
+                alert(`REBIRTH OVERRIDE: ${target} SET TO RB ${val}`);
+                document.getElementById('k-rb-user').value = '';
+                document.getElementById('k-rb-val').value = '';
+            });
+        } else {
+            alert("INPUT TARGET AND RB LEVEL");
         }
     },
     setGrade(g) {
