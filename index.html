@@ -3,231 +3,420 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX EVOLUTION v17.6</title>
+    <title>MATRIX: EVOLUTION V17.6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono&display=swap');
-        :root { --neon: #00f2ff; --pink: #ff007a; --gold: #f1c40f; --bg: #000; --glass: rgba(15, 15, 30, 0.95); }
+        :root { --neon: #00f2ff; --pink: #ff007a; --gold: #f1c40f; --bg: #000; --glass: rgba(15, 15, 30, 0.96); --red: #ff3e3e; --green: #2ecc71; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: white; font-family: 'JetBrains Mono', monospace; }
+        canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
         
-        .screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; padding: 110px 20px 20px; background: rgba(0,0,0,0.9); backdrop-filter: blur(15px); overflow-y: auto; }
-        .panel { background: var(--glass); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 20px; margin-bottom: 15px; max-width: 500px; margin-left: auto; margin-right: auto; }
-        #hud { position: fixed; top: 0; left: 0; right: 0; z-index: 2000; padding: 15px; background: rgba(0,0,0,0.85); border-bottom: 1px solid var(--neon); display: none; }
-        
-        #q-text { font-size: 3.5rem; color: var(--neon); text-align: center; font-family: 'Orbitron'; margin: 20px 0; }
-        .opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .opt-btn { padding: 25px 10px; font-size: 1.8rem; background: rgba(0,242,255,0.05); border: 2px solid var(--neon); color: white; border-radius: 15px; font-family: 'Orbitron'; cursor: pointer; }
-        
-        .action-btn { width: 100%; padding: 15px; border-radius: 10px; border: none; background: var(--pink); color: white; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; margin-top: 10px; }
-        .input-field { width: 100%; padding: 12px; margin: 10px 0; background: #111; border: 1px solid #333; color: white; border-radius: 8px; text-align: center; font-family: 'Orbitron'; }
-        
-        .leader-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(0, 242, 255, 0.1); font-size: 0.9rem; font-family: 'Orbitron'; }
-        .grade-pill { padding: 8px; border: 1px solid #444; border-radius: 8px; font-size: 0.7rem; text-align: center; cursor: pointer; }
-        .grade-pill.active { border-color: var(--neon); color: var(--neon); background: rgba(0,242,255,0.1); }
+        /* HUD */
+        #hud { position: fixed; top: 0; left: 0; right: 0; z-index: 2000; display: none; flex-direction: column; padding: 8px; background: rgba(0,0,0,0.9); border-bottom: 1px solid rgba(0,242,255,0.2); }
+        #royal-banner { width: 100%; height: 22px; background: var(--gold); color: black; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron'; font-size: 0.6rem; font-weight: 900; border-radius: 4px; margin-bottom: 5px; text-transform: uppercase; padding: 0 5px; text-align: center; overflow: hidden; }
+        .hud-row { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 0 5px; }
+        .burger-btn { background: none; border: none; color: var(--neon); font-size: 2rem; cursor: pointer; }
+
+        /* SCREENS */
+        .screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; padding: 110px 15px 20px 15px; overflow-y: auto; background: rgba(0,0,0,0.93); backdrop-filter: blur(10px); }
+        .panel { background: var(--glass); border-radius: 12px; padding: 15px; border: 1px solid rgba(0, 242, 255, 0.2); margin-bottom: 12px; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+        /* MATH UI */
+        .grade-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+        .grade-pill { padding: 10px 2px; border: 1px solid #444; border-radius: 8px; font-family: 'Orbitron'; font-size: 0.55rem; text-align: center; background: rgba(255,255,255,0.05); color: #888; }
+        .grade-pill.active { border-color: var(--neon); color: var(--neon); background: rgba(0, 242, 255, 0.1); }
+        #q-text { font-size: 2.5rem; font-family: 'Orbitron'; color: var(--neon); text-align: center; margin: 10px 0; text-shadow: 0 0 15px var(--neon); min-height: 80px; display: flex; align-items: center; justify-content: center; }
+        .math-opt { width: 100%; padding: 20px 10px; border-radius: 12px; border: 2px solid var(--neon); background: rgba(0,242,255,0.05); color: white; font-family: 'Orbitron'; font-size: 1.8rem; margin-bottom: 8px; cursor: pointer; }
+
+        /* KING & SHOP UI */
+        .action-btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 900; background: var(--pink); color: white; font-family: 'Orbitron'; font-size: 0.8rem; margin: 4px 0; text-transform: uppercase; cursor: pointer; }
+        .input-field { width: 100%; padding: 10px; margin: 4px 0; background: #000; border: 1px solid #444; color: white; border-radius: 6px; font-family: 'Orbitron'; text-align: center; font-size: 0.85rem; }
+        .restock-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 6px; border-bottom: 1px solid #333; font-size: 0.7rem; gap: 5px; }
+
+        /* LEADERBOARDS & TAGS */
+        .tag-neon { color: var(--neon); text-shadow: 0 0 5px var(--neon); font-weight: bold; }
+        .tag-pink { color: var(--pink); text-shadow: 0 0 5px var(--pink); font-weight: bold; }
+        .tag-gold { color: var(--gold); text-shadow: 0 0 10px var(--gold); font-weight: 900; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .lb-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #222; font-size: 0.75rem; }
+
+        /* MENU & BACKPACK */
+        #menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px); }
+        .menu-link { font-family: 'Orbitron'; font-size: 1.8rem; color: white; margin: 10px 0; text-transform: uppercase; cursor: pointer; }
+        .bp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .bp-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
     </style>
 </head>
 <body>
+    <canvas id="world"></canvas>
+    
+    <div id="menu-overlay">
+        <div style="position:absolute; top:20px; right:20px; font-size:3rem; color:var(--pink);" onclick="toggleMenu()">×</div>
+        <div class="menu-link" onclick="Router.go('core'); toggleMenu()">MINING</div>
+        <div class="menu-link" onclick="Router.go('shop'); toggleMenu()">GLOBAL SHOP</div>
+        <div class="menu-link" onclick="App.openCollection(); toggleMenu()">BACKPACK</div>
+        <div class="menu-link" onclick="Router.go('rank'); toggleMenu()">RANKINGS</div>
+        <div id="king-link" class="menu-link" style="display:none; color:var(--gold);" onclick="Router.go('king'); toggleMenu()">KING TERMINAL</div>
+    </div>
 
     <div id="hud">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div id="menu-btn" onclick="App.toggleKing()" style="font-size:1.8rem; cursor:pointer; color:var(--neon);">☰</div>
-            <div style="font-family:'Orbitron'; display:flex; gap:20px;">
-                <span style="color:var(--gold);">💎 <span id="stat-gems">0</span></span>
-                <span style="color:var(--pink);">RB: <span id="stat-rb">0</span></span>
+        <div id="royal-banner">SYSTEM ONLINE</div>
+        <div class="hud-row">
+            <button class="burger-btn" onclick="toggleMenu()">☰</button>
+            <div style="display:flex; gap:15px; font-family:'Orbitron'; font-size:0.9rem;">
+                <div style="color:var(--gold);">💎 <span id="gems-display">0</span></div>
+                <div style="color:var(--pink);">RB: <span id="rb-display">0</span></div>
             </div>
         </div>
     </div>
 
-    <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center;">
-        <div class="panel" style="width:100%; text-align:center;">
-            <h1 style="font-family:'Orbitron'; color:var(--neon);">MATRIX v17.6</h1>
-            <input type="text" id="login-u" class="input-field" placeholder="USER ID">
-            <input type="password" id="login-p" class="input-field" placeholder="PASSCODE">
-            <button class="action-btn" onclick="Auth.login()">INITIALIZE</button>
+    <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center; z-index:6000; padding:0;">
+        <div class="panel" style="width: 85%; text-align: center;">
+            <h2 style="font-family:'Orbitron'; color:var(--neon); margin-bottom:20px;">MATRIX INITIALIZE</h2>
+            <input type="text" id="auth-u" class="input-field" placeholder="USER ID">
+            <input type="password" id="auth-p" class="input-field" placeholder="PASSCODE">
+            <button class="action-btn" style="background:var(--neon); color:black;" onclick="Auth.execute()">ENTER MATRIX</button>
         </div>
     </div>
 
-    <div id="screen-game" class="screen">
-        <div class="panel" style="border-color: var(--gold);">
-            <div style="color:var(--gold); font-family:'Orbitron'; text-align:center; margin-bottom:10px;">TOP OPERATORS</div>
-            <div id="leaderboard-list"></div>
-        </div>
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:20px;">
-            <div id="g-3" class="grade-pill active" onclick="App.setGrade(3)">GRADE 3</div>
-            <div id="g-6" class="grade-pill" onclick="App.setGrade(6)">GRADE 6</div>
+    <div id="screen-core" class="screen">
+        <div class="grade-grid">
+            <div id="gp-50" class="grade-pill" onclick="App.setGrade(50)">K-1</div>
+            <div id="gp-75" class="grade-pill" onclick="App.setGrade(75)">2-3</div>
+            <div id="gp-100" class="grade-pill" onclick="App.setGrade(100)">4-5</div>
+            <div id="gp-150" class="grade-pill" onclick="App.setGrade(150)">6-7</div>
+            <div id="gp-250" class="grade-pill" onclick="App.setGrade(250)">8-12</div>
+            <div id="gp-300" class="grade-pill" onclick="App.setGrade(300)">ADULT</div>
         </div>
         <div id="q-text">...</div>
-        <div id="options" class="opt-grid"></div>
-        <button class="action-btn" style="margin-top:30px; background:var(--gold); color:black;" onclick="App.attemptRebirth()">REBIRTH (10k GEMS)</button>
+        <div id="opt-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
+    </div>
+
+    <div id="screen-rank" class="screen">
+        <div class="panel" style="border-color:var(--gold);"><h4>💎 TOP GEMS</h4><div id="lb-gems"></div></div>
+        <div class="panel" style="border-color:var(--green);"><h4>🎒 COLLECTION VALUE</h4><div id="lb-worth"></div></div>
+        <div class="panel" style="border-color:var(--pink);"><h4>🌀 REBIRTHS</h4><div id="lb-rebirth"></div></div>
+        <div class="panel" style="border-color:var(--neon);"><h4>🕒 PLAYTIME</h4><div id="lb-time"></div></div>
+    </div>
+
+    <div id="screen-shop" class="screen">
+        <div class="panel" style="text-align:center;">
+            <p id="rb-cost-preview" style="color:var(--pink); font-size:0.8rem; margin:0;">RB COST: ---</p>
+            <button id="btn-rebirth" class="action-btn">EXECUTE REBIRTH</button>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button class="action-btn" style="background:var(--glass); border:1px solid var(--neon);" onclick="App.switchShopTab('normal')">GENERAL</button>
+            <button class="action-btn" style="background:var(--glass); border:1px solid var(--gold);" onclick="App.switchShopTab('crown')">👑 CROWN</button>
+        </div>
+        <div id="shop-list"></div>
+    </div>
+
+    <div id="screen-collection" class="screen">
+        <h3 style="text-align:center; font-family:'Orbitron';">MY BACKPACK</h3>
+        <div class="panel">
+            <div id="bp-grid" class="bp-grid"></div>
+        </div>
     </div>
 
     <div id="screen-king" class="screen">
-        <h2 style="color:var(--gold); text-align:center; font-family:'Orbitron';">KING OVERRIDE</h2>
+        <h3 style="color:var(--gold); text-align:center;">KING CONTROL</h3>
         
-        <div class="panel" style="border-color: var(--gold);">
-            <h4 style="color:var(--gold); margin-top:0;">SYSTEM OVERRIDE</h4>
-            <input type="text" id="k-target-user" class="input-field" placeholder="PLAYER ID">
+        <div class="panel" style="border-color:var(--gold)">
+            <h4 style="color:var(--gold); margin-top:0;">IDENTITY OVERRIDE</h4>
+            <input type="text" id="k-target-user" class="input-field" placeholder="PLAYER ID (FOR COLOR)">
+            <select id="k-color-select" class="input-field" style="background: #222; border: 1px solid var(--gold); color: white;"></select>
+            <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.kingSetColor()">FORCE COLOR</button>
             
-            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 10px;">
-                <label style="font-size: 0.6rem; color: var(--gold);">IDENTITY COLOR</label>
-                <select id="k-color-select" class="input-field" style="background: #222; border: 1px solid var(--gold); color: white;"></select>
-                <button class="action-btn" style="background: var(--gold); color: black;" onclick="App.kingSetColor()">FORCE COLOR</button>
-            </div>
-
-            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 10px;">
-                <label style="font-size: 0.6rem; color: var(--pink);">REBIRTH LEVEL</label>
-                <input type="number" id="k-rb-val" class="input-field" placeholder="NEW RB NUMBER">
-                <button class="action-btn" style="background: var(--pink); color: white;" onclick="App.kingSetRebirth()">FORCE REBIRTH</button>
+            <div style="border-top: 1px solid #333; margin-top: 15px; padding-top: 15px;">
+                <h4 style="color:var(--pink); margin-top:0;">REBIRTH SETTER</h4>
+                <input type="text" id="k-rb-user" class="input-field" placeholder="PLAYER ID (FOR RB)">
+                <input type="number" id="k-rb-val" class="input-field" placeholder="NEW RB LEVEL">
+                <button class="action-btn" style="background:var(--pink); color:white;" onclick="App.kingSetRebirth()">EXECUTE RB OVERRIDE</button>
             </div>
         </div>
 
-        <div class="panel">
-            <h4>GIFT GEMS</h4>
-            <input type="text" id="k-user" class="input-field" placeholder="USER ID">
-            <input type="number" id="k-amt" class="input-field" placeholder="AMOUNT">
-            <button class="action-btn" onclick="App.kingGift()">SEND GEMS</button>
+        <div class="panel" style="border-color:var(--gold)">
+            <input type="text" id="k-msg" class="input-field" placeholder="GLOBAL BROADCAST">
+            <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.sendBroadcast()">SEND BROADCAST</button>
+            <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.collectTax()">TAX ALL 5%</button>
         </div>
-        <button class="action-btn" style="background:#444;" onclick="App.toggleKing()">CLOSE TERMINAL</button>
+        <div class="panel" style="border-color:var(--green)">
+            <input type="text" id="k-dest" class="input-field" placeholder="USER ID">
+            <input type="number" id="k-amt" class="input-field" placeholder="GEM AMOUNT">
+            <button class="action-btn" style="background:var(--green); color:black;" onclick="App.dispatchGems()">DISPATCH GEMS</button>
+        </div>
+        <div class="panel" style="border-color:var(--neon)">
+            <input type="text" id="m-name" class="input-field" placeholder="ITEM NAME">
+            <input type="text" id="m-icon" class="input-field" placeholder="ICON (EMOJI)">
+            <input type="number" id="m-price" class="input-field" placeholder="PRICE">
+            <input type="number" id="m-stock" class="input-field" placeholder="STOCK" value="10">
+            <select id="m-tier" class="input-field"><option value="normal">NORMAL</option><option value="crown">CROWN</option></select>
+            <button class="action-btn" style="background:var(--neon); color:black;" onclick="App.forgeItem()">FORGE ITEM</button>
+        </div>
+        <div class="panel" style="border-color:var(--pink)">
+            <h4>SHOP MANAGER</h4>
+            <div id="k-restock-list"></div>
+        </div>
     </div>
 
-    <script>
-        const firebaseConfig = { databaseURL: "https://nexus-firebase-900d4-default-rtdb.firebaseio.com/" };
-        firebase.initializeApp(firebaseConfig);
-        const DB = firebase.database();
+<script>
+function toggleMenu() {
+    const m = document.getElementById('menu-overlay');
+    m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+}
 
-        const App = {
-            user: null, gems: 0, rb: 0, grade: 3,
-            init(data) {
-                this.user = data.name;
-                this.setupSync();
-                this.setupLeaderboard();
-                this.generateColors();
-                this.setGrade(3);
-                document.getElementById('hud').style.display = 'block';
-                document.getElementById('screen-game').style.display = 'flex';
-                if(this.user === 'KING') document.getElementById('menu-btn').innerText = "👑";
-            },
-            setupSync() {
-                DB.ref('users/'+this.user).on('value', s => {
-                    const d = s.val(); if(!d) return;
-                    this.gems = d.gems || 0;
-                    this.rb = d.rebirth || 0;
-                    document.getElementById('stat-gems').innerText = Math.floor(this.gems).toLocaleString();
-                    document.getElementById('stat-rb').innerText = this.rb;
-                    if(d.color) document.documentElement.style.setProperty('--neon', d.color);
-                });
-            },
-            setupLeaderboard() {
-                DB.ref('users').orderByChild('gems').limitToLast(5).on('value', snap => {
-                    const list = document.getElementById('leaderboard-list');
-                    list.innerHTML = "";
-                    let players = [];
-                    snap.forEach(c => players.push(c.val()));
-                    players.reverse().forEach(p => {
-                        list.innerHTML += `
-                            <div class="leader-row">
-                                <span style="color:${p.color || '#00f2ff'}">${p.name}</span>
-                                <span style="color:var(--gold)">${Math.floor(p.gems).toLocaleString()}</span>
-                            </div>`;
-                    });
-                });
-            },
-            generateColors() {
-                const sel = document.getElementById('k-color-select');
-                for(let i=0; i<360; i+=8) {
-                    let hex = `hsl(${i}, 100%, 60%)`;
-                    let opt = document.createElement('option');
-                    opt.value = hex;
-                    opt.innerText = `SPECTRUM V-${i}`;
-                    opt.style.color = hex;
-                    sel.appendChild(opt);
+const firebaseConfig = { databaseURL: "https://nexus-firebase-900d4-default-rtdb.firebaseio.com/" };
+firebase.initializeApp(firebaseConfig);
+const DB = firebase.database();
+
+const Auth = {
+    async execute() {
+        const u = document.getElementById('auth-u').value.toUpperCase().trim();
+        const p = document.getElementById('auth-p').value.trim();
+        if(!u || !p) return;
+        const s = await DB.ref('users/' + u).once('value');
+        let d = s.val();
+        if(!d) { d = { name: u, pass: p, gems: 500, rebirth: 0, timePlayed: 0 }; await DB.ref('users/' + u).set(d); }
+        if(d.pass === p) {
+            document.getElementById('screen-auth').style.display='none';
+            document.getElementById('hud').style.display='flex';
+            if(u === 'KING') document.getElementById('king-link').style.display='block';
+            App.init(d); Router.go('core');
+        }
+    }
+};
+
+const Router = {
+    go(s) {
+        document.querySelectorAll('.screen').forEach(x => x.style.display='none');
+        document.getElementById('screen-'+s).style.display = (s==='core'?'flex':'block');
+        if(s==='shop') App.drawShop();
+        if(s==='king') App.drawKingTools();
+    }
+};
+
+const App = {
+    init(d) {
+        this.u = d.name; this.gems = d.gems; this.rebirth = Number(d.rebirth) || 0; this.grade = 50; this.shopTab = 'normal';
+        this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
+        this.generateColors(); 
+        setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
+    },
+    getTag(rb) { if(rb >= 20) return 'tag-gold'; if(rb >= 10) return 'tag-pink'; if(rb >= 5) return 'tag-neon'; return ''; },
+    setupSync() {
+        DB.ref('users/'+this.u).on('value', s => {
+            const v = s.val(); if(!v) return;
+            this.gems = v.gems; this.rebirth = Number(v.rebirth) || 0;
+            document.getElementById('gems-display').innerText = Math.floor(this.gems).toLocaleString();
+            document.getElementById('rb-display').innerText = this.rebirth;
+            if(v.color) document.documentElement.style.setProperty('--neon', v.color);
+        });
+        DB.ref('system/broadcast').on('value', s => { document.getElementById('royal-banner').innerText = s.val() || "SYSTEM ONLINE"; });
+        DB.ref('users').on('value', s => {
+            const lg = document.getElementById('lb-gems'), lr = document.getElementById('lb-rebirth'), lt = document.getElementById('lb-time'), lw = document.getElementById('lb-worth');
+            lg.innerHTML = ''; lr.innerHTML = ''; lt.innerHTML = ''; lw.innerHTML = ''; let arr = [];
+            s.forEach(c => { 
+                const d = c.val(); if(d && d.name !== 'KING') { 
+                    d.rb = Number(d.rebirth) || 0; 
+                    let v = 0; if(d.backpack) Object.values(d.backpack).forEach(i => v += Number(i.price||0));
+                    d.worth = v; arr.push(d); 
                 }
-            },
-            kingSetColor() {
-                const target = document.getElementById('k-target-user').value.toUpperCase().trim();
-                const color = document.getElementById('k-color-select').value;
-                if(target) {
-                    DB.ref('users/' + target).update({ color: color })
-                    .then(() => alert("COLOR OVERRIDE SUCCESS: " + target));
+            });
+            [...arr].sort((a,b)=>b.gems-a.gems).slice(0,8).forEach(u=>{ lg.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${Math.floor(u.gems).toLocaleString()}</span></div>`; });
+            [...arr].sort((a,b)=>b.worth-a.worth).slice(0,8).forEach(u=>{ lw.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${u.worth.toLocaleString()}</span></div>`; });
+            [...arr].sort((a,b)=>b.rb-a.rb).slice(0,8).forEach(u=>{ lr.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>RB ${u.rb}</span></div>`; });
+            [...arr].sort((a,b)=>Number(b.timePlayed||0)-Number(a.timePlayed||0)).slice(0,8).forEach(u=>{ lt.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${u.timePlayed||0}m</span></div>`; });
+        });
+    },
+    generateColors() {
+        const sel = document.getElementById('k-color-select');
+        if(!sel) return;
+        for(let i=0; i<360; i+=8) {
+            let hue = `hsl(${i}, 100%, 60%)`;
+            let opt = document.createElement('option');
+            opt.value = hue;
+            opt.innerText = `SPECTRUM V-${i}`;
+            opt.style.color = hue;
+            sel.appendChild(opt);
+        }
+    },
+    kingSetColor() {
+        const target = document.getElementById('k-target-user').value.toUpperCase().trim();
+        const color = document.getElementById('k-color-select').value;
+        if(target) {
+            DB.ref('users/' + target).update({ color: color })
+            .then(() => alert("IDENTITY OVERRIDE SUCCESSFUL"));
+        }
+    },
+    kingSetRebirth() {
+        const target = document.getElementById('k-rb-user').value.toUpperCase().trim();
+        const val = parseInt(document.getElementById('k-rb-val').value);
+        if(target && !isNaN(val)) {
+            DB.ref('users/' + target).update({ rebirth: val })
+            .then(() => {
+                alert(`REBIRTH OVERRIDE: ${target} SET TO RB ${val}`);
+                document.getElementById('k-rb-user').value = '';
+                document.getElementById('k-rb-val').value = '';
+            });
+        } else {
+            alert("INPUT TARGET AND RB LEVEL");
+        }
+    },
+    setGrade(g) {
+        this.grade = g; document.querySelectorAll('.grade-pill').forEach(p => p.classList.remove('active'));
+        document.getElementById('gp-'+g).classList.add('active'); this.nextQ();
+    },
+    nextQ() {
+        let a, b, c, op, ans, display;
+        const type = rand(1, 2);
+
+        if (this.grade === 50) { // K-1
+            a = rand(1, 12); b = rand(1, 8);
+            if (type === 1) { ans = a + b; op = '+'; }
+            else { a = Math.max(a, b); b = Math.min(a, b); ans = a - b; op = '-'; }
+        }
+        else if (this.grade === 75) { // 2-3
+            if (type === 1) { a = rand(21, 80); b = rand(11, 40); ans = a + b; op = '+'; }
+            else { ans = rand(2, 10); b = [2, 5, 10][rand(0, 2)]; a = ans * b; display = `${a} ÷ ${b}`; }
+        }
+        else if (this.grade === 100) { // 4-5
+            if (type === 1) { ans = rand(3, 12); b = rand(3, 12); a = ans * b; op = '÷'; } 
+            else { a = rand(6, 12); b = rand(4, 12); ans = a * b; op = '×'; }
+        }
+        else if (this.grade === 150) { // 6-7
+            a = rand(5, 25); b = rand(30, 80);
+            if (type === 1) { ans = b - a; display = `X + ${a} = ${b}`; }
+            else { ans = rand(4, 12); a = rand(3, 9); b = a * ans; display = `${a}X = ${b}`; }
+        }
+        else if (this.grade === 250) { // 8-12
+            if (type === 1) { a = rand(4, 15); ans = a * a; display = `${a}² = ?`; }
+            else { 
+                ans = rand(2, 10); a = rand(2, 5); c = rand(5, 20); b = (a * ans) + c;
+                display = `${a}X + ${c} = ${b}`;
+            }
+        }
+        else { // ADULT
+            a = rand(13, 99); b = rand(11, 21); ans = a * b; op = '×';
+        }
+
+        const pot = Math.floor(this.grade * (1 + this.rebirth * 0.3));
+        document.getElementById('q-text').innerText = display || `${a} ${op} ${b}`;
+        
+        let options = new Set();
+        options.add(ans);
+        while(options.size < 4) {
+            let offset = rand(-10, 10);
+            if(offset !== 0) options.add(ans + offset);
+        }
+
+        const grid = document.getElementById('opt-grid'); 
+        grid.innerHTML = '';
+        Array.from(options).sort(() => Math.random() - 0.5).forEach(o => {
+            const btn = document.createElement('button'); btn.className = 'math-opt'; btn.innerText = o;
+            btn.onclick = () => {
+                if (o === ans) { 
+                    this.gems += pot; confetti({ particleCount: 30 }); 
+                } else { 
+                    this.gems = Math.max(0, this.gems - pot); 
                 }
-            },
-            kingSetRebirth() {
-                const target = document.getElementById('k-target-user').value.toUpperCase().trim();
-                const val = parseInt(document.getElementById('k-rb-val').value);
-                if(target && !isNaN(val)) {
-                    DB.ref('users/' + target).update({ rebirth: val })
-                    .then(() => alert("REBIRTH OVERRIDE SUCCESS: " + target + " is now RB " + val));
-                } else {
-                    alert("ENTER VALID USER ID AND NUMBER");
-                }
-            },
-            setGrade(g) {
-                this.grade = g;
-                document.querySelectorAll('.grade-pill').forEach(p => p.classList.remove('active'));
-                document.getElementById('g-'+g).classList.add('active');
+                DB.ref('users/' + this.u).update({ gems: this.gems }); 
                 this.nextQ();
-            },
-            nextQ() {
-                let a, b, ans;
-                if(this.grade === 3) { a = Math.floor(Math.random()*10); b = Math.floor(Math.random()*10); ans = a + b; }
-                else { a = Math.floor(Math.random()*12); b = Math.floor(Math.random()*12); ans = a * b; }
-                
-                document.getElementById('q-text').innerText = this.grade === 3 ? `${a} + ${b}` : `${a} × ${b}`;
-                const opts = [ans, ans+2, ans-1, ans+5].sort(()=>Math.random()-.5);
-                const container = document.getElementById('options'); container.innerHTML = "";
-                opts.forEach(o => {
-                    const btn = document.createElement('button'); btn.className = 'opt-btn'; btn.innerText = o;
-                    btn.onclick = () => {
-                        if(o === ans) {
-                            let reward = (this.grade === 3 ? 50 : 150) * (1 + this.rb);
-                            this.gems += reward;
-                            confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
-                            DB.ref('users/'+this.user).update({gems: this.gems});
-                        }
-                        this.nextQ();
-                    };
-                    container.appendChild(btn);
-                });
-            },
-            attemptRebirth() {
-                if(this.gems >= 10000) {
-                    this.gems = 0; this.rb += 1;
-                    DB.ref('users/'+this.user).update({gems: 0, rebirth: this.rb});
-                    alert("REBIRTH COMPLETE!");
-                } else { alert("NOT ENOUGH GEMS (10,000 REQUIRED)"); }
-            },
-            toggleKing() {
-                if(this.user !== 'KING') return;
-                const s = document.getElementById('screen-king');
-                s.style.display = (s.style.display === 'flex') ? 'none' : 'flex';
-            },
-            kingGift() {
-                const u = document.getElementById('k-user').value.toUpperCase().trim();
-                const a = parseInt(document.getElementById('k-amt').value);
-                if(u && a) {
-                    DB.ref('users/'+u+'/gems').transaction(g => (g||0)+a)
-                    .then(() => alert("GEMS SENT TO " + u));
-                }
-            }
-        };
-
-        const Auth = {
-            async login() {
-                const u = document.getElementById('login-u').value.toUpperCase().trim();
-                const p = document.getElementById('login-p').value;
-                if(!u || !p) return;
-                const snap = await DB.ref('users/'+u).once('value');
-                let d = snap.val();
-                if(!d) { d = {name:u, pass:p, gems:0, rebirth:0}; await DB.ref('users/'+u).set(d); }
-                if(d.pass === p) { document.getElementById('screen-auth').style.display='none'; App.init(d); }
-                else { alert("INVALID PASSCODE"); }
-            }
-        };
-    </script>
+            };
+            grid.appendChild(btn);
+        });
+    },
+    switchShopTab(t) {
+        if(t === 'crown' && this.rebirth < 5) { alert("RB 5+ REQ"); return; }
+        this.shopTab = t; this.drawShop();
+    },
+    drawShop() {
+        const cost = 1000 + (2500 * this.rebirth);
+        document.getElementById('rb-cost-preview').innerText = `RB COST: ${cost.toLocaleString()} 💎`;
+        document.getElementById('btn-rebirth').onclick = () => { if(this.gems >= cost) DB.ref('users/'+this.u).update({rebirth: this.rebirth+1, gems: 0}); };
+        const list = document.getElementById('shop-list');
+        DB.ref('system/shop').on('value', s => {
+            list.innerHTML = '';
+            s.forEach(c => {
+                const i = c.val(); if(i.tier !== this.shopTab) return;
+                list.innerHTML += `<div class="panel" style="text-align:center;"><b>${i.icon} ${i.name}</b><p>${i.price.toLocaleString()}💎 (Stock: ${i.stock})</p><button class="action-btn" onclick="App.buyItem('${c.key}')" ${i.stock<=0?'disabled':''}>BUY</button></div>`;
+            });
+        });
+    },
+    async buyItem(k) {
+        const s = await DB.ref('system/shop/'+k).once('value'); const i = s.val();
+        if(this.gems >= i.price && i.stock > 0) {
+            this.gems -= i.price; DB.ref('users/'+this.u).update({gems: this.gems});
+            DB.ref('users/'+this.u+'/backpack').push(i);
+            DB.ref('system/shop/'+k+'/stock').transaction(c => c - 1);
+        }
+    },
+    openCollection() {
+        Router.go('collection'); const g = document.getElementById('bp-grid'); g.innerHTML = '';
+        DB.ref('users/'+this.u+'/backpack').once('value', s => {
+            if(s.exists()) s.forEach(c => { const i = c.val(); g.innerHTML += `<div class="bp-item"><div>${i.icon}</div><div style="font-size:0.5rem">${i.name}</div></div>`; });
+            else g.innerHTML = "<p>EMPTY</p>";
+        });
+    },
+    drawKingTools() {
+        const rl = document.getElementById('k-restock-list');
+        DB.ref('system/shop').on('value', s => {
+            rl.innerHTML = '';
+            s.forEach(c => { 
+                const d = c.val(); 
+                const inputId = `stock-in-${c.key}`;
+                rl.innerHTML += `
+                    <div class="restock-row">
+                        <div style="width:100%; margin-bottom:5px;">${d.icon} ${d.name} (Cur: ${d.stock})</div>
+                        <input type="number" id="${inputId}" class="input-field" style="width:40%; margin:0; font-size:0.7rem;" placeholder="NEW STOCK">
+                        <button class="restock-btn" style="background:var(--neon); border:none; padding:8px; font-family:'Orbitron'; font-size:0.6rem; color:black;" onclick="App.setExactStock('${c.key}', '${inputId}')">SET</button>
+                        <button class="restock-btn" style="background:var(--red); border:none; padding:8px; font-family:'Orbitron'; font-size:0.6rem; color:white;" onclick="App.deleteShopItem('${c.key}')">DEL</button>
+                    </div>`; 
+            });
+        });
+    },
+    setExactStock(k, inputId) {
+        const val = parseInt(document.getElementById(inputId).value);
+        if(!isNaN(val)) {
+            DB.ref('system/shop/'+k+'/stock').set(val);
+            document.getElementById(inputId).value = '';
+        }
+    },
+    deleteShopItem(k) {
+        if(confirm("DELETE THIS ITEM FROM GLOBAL SHOP?")) {
+            DB.ref('system/shop/'+k).remove();
+        }
+    },
+    forgeItem() {
+        const n=document.getElementById('m-name').value, i=document.getElementById('m-icon').value, p=parseInt(document.getElementById('m-price').value), t=document.getElementById('m-tier').value, s=parseInt(document.getElementById('m-stock').value);
+        if(n && i && !isNaN(p)) { DB.ref('system/shop').push({name:n, icon:i, price:p, stock:s||10, tier:t}); alert("FORGED"); }
+    },
+    sendBroadcast() { const m = document.getElementById('k-msg').value.toUpperCase(); if(m) DB.ref('system/broadcast').set("👑 KING: " + m); },
+    dispatchGems() {
+        const t = document.getElementById('k-dest').value.toUpperCase().trim();
+        const a = parseInt(document.getElementById('k-amt').value);
+        if(t && !isNaN(a)) { DB.ref('users/'+t+'/gems').transaction(g => (g || 0) + a); alert("DISPATCHED"); }
+    },
+    collectTax() {
+        DB.ref('users').once('value', s => {
+            let total = 0; s.forEach(c => { const d = c.val(); if(d.name !== 'KING' && d.gems > 50) { const tx = Math.floor(d.gems * 0.05); DB.ref('users/'+c.key+'/gems').transaction(g => g - tx); total += tx; }});
+            DB.ref('users/KING/gems').transaction(g => (g || 0) + total); alert("TAXED: " + total);
+        });
+    },
+    omegaWipe() { if(confirm("WIPE?")) DB.ref('users').once('value', s => s.forEach(c => { if(c.key !== 'KING') DB.ref('users/'+c.key).update({gems:0, rebirth:0, backpack:null}); })); },
+    init3D() {
+        this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('world'), alpha: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(15, 1), new THREE.MeshBasicMaterial({color: 0x00f2ff, wireframe: true}));
+        this.scene.add(this.mesh); this.camera.position.z = 40;
+    },
+    animate() { requestAnimationFrame(()=>this.animate()); if(this.mesh) { this.mesh.rotation.y += 0.005; } this.renderer.render(this.scene, this.camera); }
+};
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1) + min); }
+</script>
 </body>
 </html>
