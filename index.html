@@ -70,20 +70,29 @@
         <h2 style="color:var(--gold); text-align:center; font-family:'Orbitron';">KING OVERRIDE</h2>
         
         <div class="panel" style="border-color: var(--gold);">
-            <h4 style="color:var(--gold);">IDENTITY OVERRIDE</h4>
+            <h4 style="color:var(--gold); margin-top:0;">SYSTEM OVERRIDE</h4>
             <input type="text" id="k-target-user" class="input-field" placeholder="PLAYER ID">
-            <select id="k-color-select" class="input-field" style="background: #222; border: 1px solid var(--gold); color: white;">
-                </select>
-            <button class="action-btn" style="background: var(--gold); color: black;" onclick="App.kingSetColor()">FORCE CHANGE COLOR</button>
+            
+            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 10px;">
+                <label style="font-size: 0.6rem; color: var(--gold);">IDENTITY COLOR</label>
+                <select id="k-color-select" class="input-field" style="background: #222; border: 1px solid var(--gold); color: white;"></select>
+                <button class="action-btn" style="background: var(--gold); color: black;" onclick="App.kingSetColor()">FORCE COLOR</button>
+            </div>
+
+            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 10px;">
+                <label style="font-size: 0.6rem; color: var(--pink);">REBIRTH LEVEL</label>
+                <input type="number" id="k-rb-val" class="input-field" placeholder="NEW RB NUMBER">
+                <button class="action-btn" style="background: var(--pink); color: white;" onclick="App.kingSetRebirth()">FORCE REBIRTH</button>
+            </div>
         </div>
 
         <div class="panel">
             <h4>GIFT GEMS</h4>
             <input type="text" id="k-user" class="input-field" placeholder="USER ID">
             <input type="number" id="k-amt" class="input-field" placeholder="AMOUNT">
-            <button class="action-btn" onclick="App.kingGift()">SEND</button>
+            <button class="action-btn" onclick="App.kingGift()">SEND GEMS</button>
         </div>
-        <button class="action-btn" style="background:#444;" onclick="App.toggleKing()">CLOSE</button>
+        <button class="action-btn" style="background:#444;" onclick="App.toggleKing()">CLOSE TERMINAL</button>
     </div>
 
     <script>
@@ -97,7 +106,7 @@
                 this.user = data.name;
                 this.setupSync();
                 this.setupLeaderboard();
-                this.generateColors(); // Creates the 45 options
+                this.generateColors();
                 this.setGrade(3);
                 document.getElementById('hud').style.display = 'block';
                 document.getElementById('screen-game').style.display = 'flex';
@@ -110,7 +119,6 @@
                     this.rb = d.rebirth || 0;
                     document.getElementById('stat-gems').innerText = Math.floor(this.gems).toLocaleString();
                     document.getElementById('stat-rb').innerText = this.rb;
-                    // Apply custom color if set by King
                     if(d.color) document.documentElement.style.setProperty('--neon', d.color);
                 });
             },
@@ -131,7 +139,7 @@
             },
             generateColors() {
                 const sel = document.getElementById('k-color-select');
-                for(let i=0; i<360; i+=8) { // 360 / 8 = 45 colors
+                for(let i=0; i<360; i+=8) {
                     let hex = `hsl(${i}, 100%, 60%)`;
                     let opt = document.createElement('option');
                     opt.value = hex;
@@ -145,7 +153,17 @@
                 const color = document.getElementById('k-color-select').value;
                 if(target) {
                     DB.ref('users/' + target).update({ color: color })
-                    .then(() => alert("OVERRIDE SUCCESSFUL: " + target));
+                    .then(() => alert("COLOR OVERRIDE SUCCESS: " + target));
+                }
+            },
+            kingSetRebirth() {
+                const target = document.getElementById('k-target-user').value.toUpperCase().trim();
+                const val = parseInt(document.getElementById('k-rb-val').value);
+                if(target && !isNaN(val)) {
+                    DB.ref('users/' + target).update({ rebirth: val })
+                    .then(() => alert("REBIRTH OVERRIDE SUCCESS: " + target + " is now RB " + val));
+                } else {
+                    alert("ENTER VALID USER ID AND NUMBER");
                 }
             },
             setGrade(g) {
@@ -184,13 +202,17 @@
                 } else { alert("NOT ENOUGH GEMS (10,000 REQUIRED)"); }
             },
             toggleKing() {
+                if(this.user !== 'KING') return;
                 const s = document.getElementById('screen-king');
                 s.style.display = (s.style.display === 'flex') ? 'none' : 'flex';
             },
             kingGift() {
-                const u = document.getElementById('k-user').value.toUpperCase();
+                const u = document.getElementById('k-user').value.toUpperCase().trim();
                 const a = parseInt(document.getElementById('k-amt').value);
-                if(u && a) DB.ref('users/'+u+'/gems').transaction(g => (g||0)+a);
+                if(u && a) {
+                    DB.ref('users/'+u+'/gems').transaction(g => (g||0)+a)
+                    .then(() => alert("GEMS SENT TO " + u));
+                }
             }
         };
 
@@ -203,6 +225,7 @@
                 let d = snap.val();
                 if(!d) { d = {name:u, pass:p, gems:0, rebirth:0}; await DB.ref('users/'+u).set(d); }
                 if(d.pass === p) { document.getElementById('screen-auth').style.display='none'; App.init(d); }
+                else { alert("INVALID PASSCODE"); }
             }
         };
     </script>
