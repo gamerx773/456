@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V17.7</title>
+    <title>MATRIX: EVOLUTION V17.8</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -124,6 +124,13 @@
 
     <div id="screen-king" class="screen">
         <h3 style="color:var(--gold); text-align:center;">KING CONTROL</h3>
+        
+        <div class="panel" style="border-color:var(--neon)">
+            <h4 style="color:var(--neon); margin-top:0;">⚡ GEM BURST (2X)</h4>
+            <input type="number" id="k-boost-time" class="input-field" placeholder="SECONDS (e.g. 60)">
+            <button class="action-btn" style="background:var(--neon); color:black;" onclick="App.kingSetBoost()">ACTIVATE 2X BOOST</button>
+        </div>
+
         <div class="panel" style="border-color:var(--gold)">
             <h4 style="color:var(--gold); margin-top:0;">IDENTITY OVERRIDE</h4>
             <input type="text" id="k-target-user" class="input-field" placeholder="PLAYER ID (FOR COLOR)">
@@ -201,6 +208,7 @@ const Router = {
 const App = {
     init(d) {
         this.u = d.name; this.gems = d.gems; this.rebirth = Number(d.rebirth) || 0; this.grade = 50; this.shopTab = 'normal';
+        this.boostActive = false;
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
         setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
@@ -214,7 +222,34 @@ const App = {
             document.getElementById('rb-display').innerText = this.rebirth;
             if(v.color) document.documentElement.style.setProperty('--neon', v.color);
         });
-        DB.ref('system/broadcast').on('value', s => { document.getElementById('royal-banner').innerText = s.val() || "SYSTEM ONLINE"; });
+
+        // Boost Sync & Timer Logic
+        DB.ref('system/boostEnd').on('value', s => {
+            const endTime = s.val() || 0;
+            if(this.boostInterval) clearInterval(this.boostInterval);
+            
+            this.boostInterval = setInterval(() => {
+                const now = Date.now();
+                const diff = Math.ceil((endTime - now) / 1000);
+                if(diff > 0) {
+                    this.boostActive = true;
+                    document.getElementById('royal-banner').innerText = `⚡ 2X GEMS ACTIVE: ${diff}s ⚡`;
+                    document.getElementById('royal-banner').style.background = 'var(--neon)';
+                } else {
+                    this.boostActive = false;
+                    DB.ref('system/broadcast').once('value', b => {
+                        document.getElementById('royal-banner').innerText = b.val() || "SYSTEM ONLINE";
+                        document.getElementById('royal-banner').style.background = 'var(--gold)';
+                    });
+                    clearInterval(this.boostInterval);
+                }
+            }, 1000);
+        });
+
+        DB.ref('system/broadcast').on('value', s => { 
+            if(!this.boostActive) document.getElementById('royal-banner').innerText = s.val() || "SYSTEM ONLINE"; 
+        });
+
         DB.ref('users').on('value', s => {
             const lg = document.getElementById('lb-gems'), lr = document.getElementById('lb-rebirth'), lt = document.getElementById('lb-time'), lw = document.getElementById('lb-worth');
             lg.innerHTML = ''; lr.innerHTML = ''; lt.innerHTML = ''; lw.innerHTML = ''; let arr = [];
@@ -230,6 +265,14 @@ const App = {
             [...arr].sort((a,b)=>b.rb-a.rb).slice(0,8).forEach(u=>{ lr.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>RB ${u.rb}</span></div>`; });
             [...arr].sort((a,b)=>Number(b.timePlayed||0)-Number(a.timePlayed||0)).slice(0,8).forEach(u=>{ lt.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${u.timePlayed||0}m</span></div>`; });
         });
+    },
+    kingSetBoost() {
+        const sec = parseInt(document.getElementById('k-boost-time').value);
+        if(!isNaN(sec) && sec > 0) {
+            const endTime = Date.now() + (sec * 1000);
+            DB.ref('system/boostEnd').set(endTime);
+            alert(`BOOST ACTIVATED FOR ${sec} SECONDS`);
+        }
     },
     generateColors() {
         const sel = document.getElementById('k-color-select');
@@ -296,7 +339,7 @@ const App = {
             else if (type === 2) { let a = rand(4, 15); ans = a*a; display = `√${ans} = ?`; }
             else { let a = rand(2, 5), b = rand(2, 4); ans = Math.pow(a, b); display = `${a}^${b}`; }
         }
-        else { // New Adult Calculus/Matrix Logic
+        else { 
             if (type === 1) { 
                 let c = rand(2, 5), e = rand(2, 4); 
                 ans = c * e; display = `d/dx ${c}x^${e} (at x=1)`; 
@@ -312,7 +355,11 @@ const App = {
         }
 
         const rewards = { 50: 100, 75: 200, 100: 300, 150: 400, 250: 600, 400: 800 };
-        const pot = Math.floor((rewards[this.grade] || 100) * (1 + this.rebirth * 0.3));
+        let pot = Math.floor((rewards[this.grade] || 100) * (1 + this.rebirth * 0.3));
+        
+        // BOOST MULTIPLIER
+        if(this.boostActive) pot = pot * 2;
+
         document.getElementById('q-text').innerText = display;
         
         let options = new Set();
