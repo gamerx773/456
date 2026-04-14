@@ -178,6 +178,12 @@ const App = {
         setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
     getTag(rb) { if(rb >= 20) return 'tag-gold'; if(rb >= 10) return 'tag-pink'; if(rb >= 5) return 'tag-neon'; return ''; },
+    generateColors() {
+        const sel = document.getElementById('k-color-select');
+        const colors = { "NEON BLUE": "#00f2ff", "NEON PINK": "#ff007a", "GOLD": "#f1c40f", "EMERALD": "#2ecc71", "LAVA": "#ff4d00", "PURPLE": "#bc13fe" };
+        sel.innerHTML = '';
+        for(let name in colors) { sel.innerHTML += `<option value="${colors[name]}">${name}</option>`; }
+    },
     setupSync() {
         DB.ref('users/'+this.u).on('value', s => {
             const v = s.val(); if(!v) return;
@@ -332,7 +338,36 @@ const App = {
             else g.innerHTML = "<p>EMPTY</p>";
         });
     },
-    drawKingTools() { /* Same as previous version... */ },
+    drawKingTools() { this.generateColors(); },
+    kingSetBoost() {
+        const sec = parseInt(document.getElementById('k-boost-time').value);
+        if(!isNaN(sec)) {
+            const end = Date.now() + (sec * 1000);
+            DB.ref('system/boostEnd').set(end);
+            alert(`BOOST ACTIVATED FOR ${sec}s`);
+        }
+    },
+    kingSetColor() {
+        const target = document.getElementById('k-target-user').value.toUpperCase().trim();
+        const color = document.getElementById('k-color-select').value;
+        if(target) {
+            DB.ref('users/'+target).update({ color: color });
+            alert(`OVERRODE COLOR FOR ${target}`);
+        }
+    },
+    collectTax() {
+        if(confirm("TAX ALL PLAYERS 5%?")) {
+            DB.ref('users').once('value', s => {
+                s.forEach(c => {
+                    if(c.key !== 'KING') {
+                        const cur = c.val().gems || 0;
+                        DB.ref('users/'+c.key).update({ gems: cur * 0.95 });
+                    }
+                });
+            });
+            alert("TAXATION COMPLETE");
+        }
+    },
     forgeItem() { const n=document.getElementById('m-name').value, i=document.getElementById('m-icon').value, p=parseInt(document.getElementById('m-price').value); if(n && i && !isNaN(p)) { DB.ref('system/shop').push({name:n, icon:i, price:p, stock:10, tier:'normal'}); alert("FORGED"); } },
     sendBroadcast() { const m = document.getElementById('k-msg').value.toUpperCase(); if(m) DB.ref('system/broadcast').set("👑 KING: " + m); },
     init3D() {
