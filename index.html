@@ -180,18 +180,37 @@ firebase.initializeApp(firebaseConfig);
 const DB = firebase.database();
 
 const Auth = {
+    // --- NO BAD USERNAMES UPDATE ---
+    badWords: ["ASS", "FUCK", "SHIT", "PISS", "DIC", "DIK", "COCK", "CUNT", "SLUT", "BITCH", "NIG", "SEX", "GAY"],
+    
     async execute() {
         const u = document.getElementById('auth-u').value.toUpperCase().trim();
         const p = document.getElementById('auth-p').value.trim();
+        
         if(!u || !p) return;
+
+        // Validation Check
+        const isBad = this.badWords.some(word => u.includes(word));
+        if(isBad && u !== 'KING') {
+            alert("⚠️ TERMINAL ACCESS DENIED: RESTRICTED USER ID");
+            document.getElementById('auth-u').value = '';
+            return;
+        }
+
         const s = await DB.ref('users/' + u).once('value');
         let d = s.val();
-        if(!d) { d = { name: u, pass: p, gems: 500, rebirth: 0, timePlayed: 0 }; await DB.ref('users/' + u).set(d); }
+        if(!d) { 
+            d = { name: u, pass: p, gems: 500, rebirth: 0, timePlayed: 0 }; 
+            await DB.ref('users/' + u).set(d); 
+        }
+        
         if(d.pass === p) {
             document.getElementById('screen-auth').style.display='none';
             document.getElementById('hud').style.display='flex';
             if(u === 'KING') document.getElementById('king-link').style.display='block';
             App.init(d); Router.go('core');
+        } else {
+            alert("INVALID PASSCODE");
         }
     }
 };
