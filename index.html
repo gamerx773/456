@@ -200,9 +200,9 @@ const Auth = {
         const s = await DB.ref('users/' + u).once('value');
         let d = s.val();
         
-        // --- NEW BAN CHECK FEATURE ---
+        // CHECK IF BANNED BEFORE LOGIN
         if(d && d.banned === true) { 
-            alert("🛑 ACCESS REVOKED: THIS ACCOUNT HAS BEEN BANNED BY THE KING."); 
+            alert("🛑 ACCESS REVOKED: THIS ACCOUNT HAS BEEN BANNED."); 
             return; 
         }
         
@@ -239,8 +239,12 @@ const App = {
     setupSync() {
         DB.ref('users/'+this.u).on('value', s => {
             const v = s.val(); if(!v) return;
-            // Immediate ban logout if online
-            if(v.banned === true) { location.reload(); }
+            // BOOT PLAYER IMMEDIATELY IF BANNED
+            if(v.banned === true) { 
+                alert("YOU HAVE BEEN BANNED FROM THE MATRIX.");
+                location.reload(); 
+                return;
+            }
             
             this.gems = v.gems; this.rebirth = Number(v.rebirth) || 0;
             document.getElementById('gems-display').innerText = Math.floor(this.gems).toLocaleString();
@@ -275,14 +279,17 @@ const App = {
             const lg = document.getElementById('lb-gems'), lr = document.getElementById('lb-rebirth'), lt = document.getElementById('lb-time'), lw = document.getElementById('lb-worth'), pm = document.getElementById('k-player-monitor');
             lg.innerHTML = ''; lr.innerHTML = ''; lt.innerHTML = ''; lw.innerHTML = ''; pm.innerHTML = '';
             let arr = [];
+            
             s.forEach(c => { 
-                const d = c.val(); if(d && d.name !== 'KING') { 
+                const d = c.val(); 
+                if(d && d.name !== 'KING') { 
                     d.rb = Number(d.rebirth) || 0; 
                     let v = 0; if(d.backpack) Object.values(d.backpack).forEach(i => v += Number(i.price||0));
-                    d.worth = v; arr.push(d); 
+                    d.worth = v; 
                     
-                    // BAN MONITOR LISTING
                     const isBanned = d.banned === true;
+                    
+                    // KING MONITOR: Shows everyone so you can manage them
                     pm.innerHTML += `
                         <div class="lb-row" style="background:${isBanned?'rgba(255,0,0,0.1)':'transparent'}">
                             <span>${d.name} ${isBanned?'<b style="color:red">[BANNED]</b>':''}</span>
@@ -293,8 +300,15 @@ const App = {
                                 </button>
                             </div>
                         </div>`;
+
+                    // PUBLIC LEADERBOARDS: Only push if NOT banned
+                    if(!isBanned) {
+                        arr.push(d); 
+                    }
                 }
             });
+            
+            // Render the filtered list to rankings
             [...arr].sort((a,b)=>b.gems-a.gems).slice(0,8).forEach(u=>{ lg.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${Math.floor(u.gems).toLocaleString()}</span></div>`; });
             [...arr].sort((a,b)=>b.worth-a.worth).slice(0,8).forEach(u=>{ lw.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${u.worth.toLocaleString()}</span></div>`; });
             [...arr].sort((a,b)=>b.rb-a.rb).slice(0,8).forEach(u=>{ lr.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>RB ${u.rb}</span></div>`; });
@@ -302,7 +316,6 @@ const App = {
         });
     },
     
-    // BAN LOGIC
     toggleBan(u, isBanned) {
         const action = isBanned ? "UNBAN" : "BAN";
         if(confirm(`ARE YOU SURE YOU WANT TO ${action} USER: ${u}?`)) { 
@@ -311,7 +324,7 @@ const App = {
     },
 
     omegaWipe() {
-        if(confirm("⚠️ CRITICAL WARNING: THIS WILL RESET ALL PLAYERS TO ZERO. ARE YOU ABSOLUTELY SURE?")) {
+        if(confirm("⚠️ CRITICAL WARNING: THIS WILL RESET ALL PLAYERS. ARE YOU ABSOLUTELY SURE?")) {
             DB.ref('users').once('value', s => {
                 s.forEach(c => {
                     const userId = c.key;
@@ -325,7 +338,7 @@ const App = {
                         });
                     }
                 });
-                alert("SYSTEM RESET COMPLETE. ALL LEADERBOARDS WIPED.");
+                alert("SYSTEM RESET COMPLETE.");
             });
         }
     },
