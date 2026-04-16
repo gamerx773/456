@@ -199,7 +199,13 @@ const Auth = {
         if(!u || !p) return;
         const s = await DB.ref('users/' + u).once('value');
         let d = s.val();
-        if(d && d.banned === true) { alert("🛑 ACCESS REVOKED: THIS ACCOUNT HAS BEEN BANNED BY THE KING."); return; }
+        
+        // --- NEW BAN CHECK FEATURE ---
+        if(d && d.banned === true) { 
+            alert("🛑 ACCESS REVOKED: THIS ACCOUNT HAS BEEN BANNED BY THE KING."); 
+            return; 
+        }
+        
         const isBad = this.badWords.some(word => u.includes(word));
         if(isBad && u !== 'KING') { alert("⚠️ TERMINAL ACCESS DENIED: RESTRICTED USER ID"); return; }
         if(!d) { d = { name: u, pass: p, gems: 500, rebirth: 0, timePlayed: 0, banned: false }; await DB.ref('users/' + u).set(d); }
@@ -233,6 +239,9 @@ const App = {
     setupSync() {
         DB.ref('users/'+this.u).on('value', s => {
             const v = s.val(); if(!v) return;
+            // Immediate ban logout if online
+            if(v.banned === true) { location.reload(); }
+            
             this.gems = v.gems; this.rebirth = Number(v.rebirth) || 0;
             document.getElementById('gems-display').innerText = Math.floor(this.gems).toLocaleString();
             document.getElementById('rb-display').innerText = this.rebirth;
@@ -271,8 +280,19 @@ const App = {
                     d.rb = Number(d.rebirth) || 0; 
                     let v = 0; if(d.backpack) Object.values(d.backpack).forEach(i => v += Number(i.price||0));
                     d.worth = v; arr.push(d); 
+                    
+                    // BAN MONITOR LISTING
                     const isBanned = d.banned === true;
-                    pm.innerHTML += `<div class="lb-row" style="background:${isBanned?'rgba(255,0,0,0.1)':'transparent'}"><span>${d.name} ${isBanned?'[BANNED]':''}</span><div><button onclick="App.toggleBan('${d.name}', ${isBanned})" style="background:${isBanned? 'var(--green)' : 'var(--red)'}; color:white; border:none; padding:2px 6px; font-size:0.5rem; border-radius:4px; cursor:pointer;">${isBanned?'UNBAN':'BAN'}</button></div></div>`;
+                    pm.innerHTML += `
+                        <div class="lb-row" style="background:${isBanned?'rgba(255,0,0,0.1)':'transparent'}">
+                            <span>${d.name} ${isBanned?'<b style="color:red">[BANNED]</b>':''}</span>
+                            <div>
+                                <button onclick="App.toggleBan('${d.name}', ${isBanned})" 
+                                style="background:${isBanned? 'var(--green)' : 'var(--red)'}; color:white; border:none; padding:4px 8px; font-size:0.6rem; border-radius:4px; cursor:pointer; font-family:'Orbitron';">
+                                    ${isBanned?'UNBAN':'BAN'}
+                                </button>
+                            </div>
+                        </div>`;
                 }
             });
             [...arr].sort((a,b)=>b.gems-a.gems).slice(0,8).forEach(u=>{ lg.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${Math.floor(u.gems).toLocaleString()}</span></div>`; });
@@ -281,10 +301,15 @@ const App = {
             [...arr].sort((a,b)=>Number(b.timePlayed||0)-Number(a.timePlayed||0)).slice(0,8).forEach(u=>{ lt.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${u.timePlayed||0}m</span></div>`; });
         });
     },
+    
+    // BAN LOGIC
     toggleBan(u, isBanned) {
         const action = isBanned ? "UNBAN" : "BAN";
-        if(confirm(`ARE YOU SURE YOU WANT TO ${action} USER: ${u}?`)) { DB.ref('users/' + u).update({ banned: !isBanned }); }
+        if(confirm(`ARE YOU SURE YOU WANT TO ${action} USER: ${u}?`)) { 
+            DB.ref('users/' + u).update({ banned: !isBanned }); 
+        }
     },
+
     omegaWipe() {
         if(confirm("⚠️ CRITICAL WARNING: THIS WILL RESET ALL PLAYERS TO ZERO. ARE YOU ABSOLUTELY SURE?")) {
             DB.ref('users').once('value', s => {
@@ -295,7 +320,8 @@ const App = {
                             gems: 500,
                             rebirth: 0,
                             timePlayed: 0,
-                            backpack: null
+                            backpack: null,
+                            banned: false
                         });
                     }
                 });
