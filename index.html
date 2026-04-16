@@ -35,7 +35,6 @@
         /* KING & SHOP UI */
         .action-btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 900; background: var(--pink); color: white; font-family: 'Orbitron'; font-size: 0.8rem; margin: 4px 0; text-transform: uppercase; cursor: pointer; }
         .input-field { width: 100%; padding: 10px; margin: 4px 0; background: #000; border: 1px solid #444; color: white; border-radius: 6px; font-family: 'Orbitron'; text-align: center; font-size: 0.85rem; }
-        .restock-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 6px; border-bottom: 1px solid #333; font-size: 0.7rem; gap: 5px; }
 
         /* LEADERBOARDS & TAGS */
         .tag-neon { color: var(--neon); text-shadow: 0 0 5px var(--neon); font-weight: bold; }
@@ -170,7 +169,7 @@
 
         <div class="panel" style="border-color:var(--red); text-align: center;">
             <h4 style="color:var(--red); margin-top:0;">☣️ SYSTEM RESET ☣️</h4>
-            <p style="font-size: 0.6rem; color: #888; margin-bottom: 10px;">THIS WILL WIPE GEMS, REBIRTHS, PLAYTIME, AND BACKPACKS FOR ALL PLAYERS.</p>
+            <p style="font-size: 0.6rem; color: #888; margin-bottom: 10px;">THIS WILL WIPE GEMS, REBIRTHS, AND BACKPACKS.</p>
             <button class="action-btn" style="background:var(--red); color:white; border: 2px solid white;" onclick="App.omegaWipe()">EXECUTE OMEGA WIPE</button>
         </div>
 
@@ -207,10 +206,10 @@ const Auth = {
         const s = await DB.ref('users/' + u).once('value');
         let d = s.val();
         
-        if(d && d.banned === true) { alert("🛑 ACCESS REVOKED: THIS ACCOUNT HAS BEEN BANNED."); return; }
+        if(d && d.banned === true) { alert("🛑 ACCESS REVOKED: BANNED."); return; }
         
         const isBad = this.badWords.some(word => u.includes(word));
-        if(isBad && u !== 'KING') { alert("⚠️ TERMINAL ACCESS DENIED: RESTRICTED USER ID"); return; }
+        if(isBad && u !== 'KING') { alert("⚠️ TERMINAL ACCESS DENIED"); return; }
         if(!d) { d = { name: u, pass: p, gems: 500, rebirth: 0, timePlayed: 0, banned: false, cursed: false }; await DB.ref('users/' + u).set(d); }
         if(d.pass === p) {
             document.getElementById('screen-auth').style.display='none';
@@ -242,11 +241,9 @@ const App = {
     setupSync() {
         DB.ref('users/'+this.u).on('value', s => {
             const v = s.val(); if(!v) return;
-            if(v.banned === true) { alert("YOU HAVE BEEN BANNED FROM THE MATRIX."); location.reload(); return; }
-            
+            if(v.banned === true) { alert("BANNED."); location.reload(); return; }
             this.gems = v.gems; this.rebirth = Number(v.rebirth) || 0;
-            this.isCursed = v.cursed || false; // Sync the curse state
-            
+            this.isCursed = v.cursed || false; // NEW SYNC
             document.getElementById('gems-display').innerText = Math.floor(this.gems).toLocaleString();
             document.getElementById('rb-display').innerText = this.rebirth;
             if(v.color) document.documentElement.style.setProperty('--neon', v.color);
@@ -287,7 +284,7 @@ const App = {
                     d.worth = v; 
                     const isBanned = d.banned === true;
                     const isCursed = d.cursed === true;
-                    pm.innerHTML += `<div class="lb-row"><span>${d.name} ${isBanned?'[B]':''} ${isCursed?'[🔮]':''}</span><button onclick="App.toggleBan('${d.name}', ${isBanned})" style="background:${isBanned?'#2ecc71':'#ff3e3e'}; border:none; border-radius:4px; font-size:0.5rem; color:white;">${isBanned?'U':'B'}</button></div>`;
+                    pm.innerHTML += `<div class="lb-row"><span>${d.name} ${isBanned?'[B]':''} ${isCursed?'[🔮]':''}</span><button onclick="App.toggleBan('${d.name}', ${isBanned})" style="background:${isBanned?'var(--green)':'var(--red)'}; color:white; border:none; border-radius:4px; font-size:0.5rem; padding:2px 5px;">${isBanned?'U':'B'}</button></div>`;
                     if(!isBanned) arr.push(d); 
                 }
             });
@@ -298,12 +295,12 @@ const App = {
         });
     },
     
-    toggleBan(u, isBanned) { if(confirm(`ACTION: ${u}?`)) DB.ref('users/' + u).update({ banned: !isBanned }); },
+    toggleBan(u, isBanned) { if(confirm(`${isBanned?'UNBAN':'BAN'} ${u}?`)) DB.ref('users/' + u).update({ banned: !isBanned }); },
     kingSetCurse(state) {
         const target = document.getElementById('k-curse-user').value.toUpperCase().trim();
         if(target) {
             DB.ref('users/' + target).update({ cursed: state });
-            alert(state ? `🔮 CURSE CAST ON ${target}` : `✨ CURSE LIFTED FROM ${target}`);
+            alert(state ? `🔮 CURSE CAST ON ${target}` : `✨ CURSE LIFTED`);
         }
     },
     omegaWipe() { if(confirm("WIPE ALL?")) { DB.ref('users').once('value', s => { s.forEach(c => { if(c.key !== 'KING') DB.ref('users/'+c.key).update({gems:500,rebirth:0,timePlayed:0,backpack:null,banned:false,cursed:false}); }); }); } },
@@ -316,12 +313,10 @@ const App = {
     nextQ() {
         let ans, display; 
         const type = rand(1, 3);
-        
-        // OVERRIDE FOR CURSED PLAYERS
-        let activeGrade = this.isCursed ? 999 : this.grade;
+        let activeGrade = this.isCursed ? 999 : this.grade; // CURSE OVERRIDE
 
         if (activeGrade === 999) {
-            // IMPOSSIBLE LEVEL: High Multi-Step Algebra
+            // "LOGIC CURSE" Questions: Aggressive Algebra
             let x = rand(12, 25), a = rand(6, 12), b = rand(25, 100), c = rand(10, 50);
             let res = (a * x) + b - c;
             ans = x;
@@ -395,9 +390,10 @@ const App = {
     openCollection() { Router.go('collection'); const g = document.getElementById('bp-grid'); g.innerHTML = ''; DB.ref('users/'+this.u+'/backpack').once('value', s => { if(s.exists()) s.forEach(c => { const i = c.val(); g.innerHTML += `<div class="bp-item"><div>${i.icon}</div><div style="font-size:0.5rem">${i.name}</div></div>`; }); else g.innerHTML = "<p>EMPTY</p>"; }); },
     drawKingTools() { const rl = document.getElementById('k-restock-list'); DB.ref('system/shop').on('value', s => { rl.innerHTML = ''; s.forEach(c => { const d = c.val(); const inputId = `stock-in-${c.key}`; rl.innerHTML += `<div class="restock-row"><div style="width:100%;">${d.icon} ${d.name}</div><input type="number" id="${inputId}" class="input-field" style="width:30%;" placeholder="STK"><button class="restock-btn" style="background:var(--neon); border:none; color:black; font-size:0.5rem;" onclick="App.setExactStock('${c.key}', '${inputId}')">SET</button></div>`; }); }); },
     setExactStock(k, id) { const val = parseInt(document.getElementById(id).value); if(!isNaN(val)) DB.ref('system/shop/'+k+'/stock').set(val); },
+    forgeItem() { const n=document.getElementById('m-name').value, i=document.getElementById('m-icon').value, p=parseInt(document.getElementById('m-price').value), t=document.getElementById('m-tier').value, s=parseInt(document.getElementById('m-stock').value); if(n && i && !isNaN(p)) { DB.ref('system/shop').push({name:n, icon:i, price:p, stock:s||10, tier:t}); } },
     sendBroadcast() { const m = document.getElementById('k-msg').value.toUpperCase(); if(m) DB.ref('system/broadcast').set("👑 KING: " + m); },
     dispatchGems() { const t = document.getElementById('k-dest').value.toUpperCase().trim(); const a = parseInt(document.getElementById('k-amt').value); if(t && !isNaN(a)) { DB.ref('users/'+t+'/gems').transaction(g => (g || 0) + a); } },
-    collectTax() { DB.ref('users').once('value', s => { let total = 0; s.forEach(c => { const d = c.val(); if(d.name !== 'KING' && d.gems > 50) { const tx = Math.floor(d.gems * 0.05); DB.ref('users/'+c.key+'/gems').transaction(g => g - tx); total += tx; }}); DB.ref('users/KING/gems').transaction(g => (g || 0) + total); alert("TAXED: " + total); }); },
+    collectTax() { DB.ref('users').once('value', s => { let total = 0; s.forEach(c => { const d = c.val(); if(d.name !== 'KING' && d.gems > 50) { const tx = Math.floor(d.gems * 0.05); DB.ref('users/'+c.key+'/gems').transaction(g => g - tx); total += tx; }}); DB.ref('users/KING/gems').transaction(g => (g || 0) + total); }); },
     init3D() { this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000); this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('world'), alpha: true }); this.renderer.setSize(window.innerWidth, window.innerHeight); this.mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(15, 1), new THREE.MeshBasicMaterial({color: 0x00f2ff, wireframe: true})); this.scene.add(this.mesh); this.camera.position.z = 40; },
     animate() { requestAnimationFrame(()=>this.animate()); if(this.mesh) { this.mesh.rotation.y += 0.005; } this.renderer.render(this.scene, this.camera); }
 };
