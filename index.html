@@ -131,9 +131,10 @@
         </div>
 
         <div class="panel" style="border-color:var(--neon)">
-            <h4 style="color:var(--neon); margin-top:0;">⚡ GEM BURST (2X)</h4>
-            <input type="number" id="k-boost-time" class="input-field" placeholder="SECONDS (e.g. 60)">
-            <button class="action-btn" style="background:var(--neon); color:black;" onclick="App.kingSetBoost()">ACTIVATE 2X BOOST</button>
+            <h4 style="color:var(--neon); margin-top:0;">⚡ CUSTOM GEM BOOST</h4>
+            <input type="text" id="k-boost-mult" class="input-field" placeholder="MULTIPLIER (e.g. 4x or 10x)">
+            <input type="number" id="k-boost-time" class="input-field" placeholder="SECONDS (e.g. 500)">
+            <button class="action-btn" style="background:var(--neon); color:black;" onclick="App.kingSetBoost()">ACTIVATE CUSTOM BOOST</button>
         </div>
 
         <div class="panel" style="border-color:var(--gold)">
@@ -200,7 +201,6 @@ const Auth = {
         const s = await DB.ref('users/' + u).once('value');
         let d = s.val();
         
-        // CHECK IF BANNED BEFORE LOGIN
         if(d && d.banned === true) { 
             alert("🛑 ACCESS REVOKED: THIS ACCOUNT HAS BEEN BANNED."); 
             return; 
@@ -231,6 +231,7 @@ const App = {
     init(d) {
         this.u = d.name; this.gems = d.gems; this.rebirth = Number(d.rebirth) || 0; this.grade = 50; this.shopTab = 'normal';
         this.boostActive = false;
+        this.boostMultiplier = 1;
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
         setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
@@ -239,31 +240,34 @@ const App = {
     setupSync() {
         DB.ref('users/'+this.u).on('value', s => {
             const v = s.val(); if(!v) return;
-            // BOOT PLAYER IMMEDIATELY IF BANNED
             if(v.banned === true) { 
                 alert("YOU HAVE BEEN BANNED FROM THE MATRIX.");
                 location.reload(); 
                 return;
             }
-            
             this.gems = v.gems; this.rebirth = Number(v.rebirth) || 0;
             document.getElementById('gems-display').innerText = Math.floor(this.gems).toLocaleString();
             document.getElementById('rb-display').innerText = this.rebirth;
             if(v.color) document.documentElement.style.setProperty('--neon', v.color);
         });
 
-        DB.ref('system/boostEnd').on('value', s => {
-            const endTime = s.val() || 0;
+        // Updated Sync for Custom Boost Multiplier
+        DB.ref('system/boost').on('value', s => {
+            const data = s.val() || { end: 0, mult: 1 };
+            const endTime = data.end || 0;
+            this.boostMultiplier = data.mult || 1;
+
             if(this.boostInterval) clearInterval(this.boostInterval);
             this.boostInterval = setInterval(() => {
                 const now = Date.now();
                 const diff = Math.ceil((endTime - now) / 1000);
                 if(diff > 0) {
                     this.boostActive = true;
-                    document.getElementById('royal-banner').innerText = `⚡ 2X GEMS ACTIVE: ${diff}s ⚡`;
+                    document.getElementById('royal-banner').innerText = `⚡ ${this.boostMultiplier}X GEMS ACTIVE: ${diff}s ⚡`;
                     document.getElementById('royal-banner').style.background = 'var(--neon)';
                 } else {
                     this.boostActive = false;
+                    this.boostMultiplier = 1;
                     DB.ref('system/broadcast').once('value', b => {
                         document.getElementById('royal-banner').innerText = b.val() || "SYSTEM ONLINE";
                         document.getElementById('royal-banner').style.background = 'var(--gold)';
@@ -279,36 +283,17 @@ const App = {
             const lg = document.getElementById('lb-gems'), lr = document.getElementById('lb-rebirth'), lt = document.getElementById('lb-time'), lw = document.getElementById('lb-worth'), pm = document.getElementById('k-player-monitor');
             lg.innerHTML = ''; lr.innerHTML = ''; lt.innerHTML = ''; lw.innerHTML = ''; pm.innerHTML = '';
             let arr = [];
-            
             s.forEach(c => { 
                 const d = c.val(); 
                 if(d && d.name !== 'KING') { 
                     d.rb = Number(d.rebirth) || 0; 
                     let v = 0; if(d.backpack) Object.values(d.backpack).forEach(i => v += Number(i.price||0));
                     d.worth = v; 
-                    
                     const isBanned = d.banned === true;
-                    
-                    // KING MONITOR: Shows everyone so you can manage them
-                    pm.innerHTML += `
-                        <div class="lb-row" style="background:${isBanned?'rgba(255,0,0,0.1)':'transparent'}">
-                            <span>${d.name} ${isBanned?'<b style="color:red">[BANNED]</b>':''}</span>
-                            <div>
-                                <button onclick="App.toggleBan('${d.name}', ${isBanned})" 
-                                style="background:${isBanned? 'var(--green)' : 'var(--red)'}; color:white; border:none; padding:4px 8px; font-size:0.6rem; border-radius:4px; cursor:pointer; font-family:'Orbitron';">
-                                    ${isBanned?'UNBAN':'BAN'}
-                                </button>
-                            </div>
-                        </div>`;
-
-                    // PUBLIC LEADERBOARDS: Only push if NOT banned
-                    if(!isBanned) {
-                        arr.push(d); 
-                    }
+                    pm.innerHTML += `<div class="lb-row" style="background:${isBanned?'rgba(255,0,0,0.1)':'transparent'}"><span>${d.name} ${isBanned?'<b style="color:red">[BANNED]</b>':''}</span><div><button onclick="App.toggleBan('${d.name}', ${isBanned})" style="background:${isBanned? 'var(--green)' : 'var(--red)'}; color:white; border:none; padding:4px 8px; font-size:0.6rem; border-radius:4px; cursor:pointer; font-family:'Orbitron';">${isBanned?'UNBAN':'BAN'}</button></div></div>`;
+                    if(!isBanned) arr.push(d); 
                 }
             });
-            
-            // Render the filtered list to rankings
             [...arr].sort((a,b)=>b.gems-a.gems).slice(0,8).forEach(u=>{ lg.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${Math.floor(u.gems).toLocaleString()}</span></div>`; });
             [...arr].sort((a,b)=>b.worth-a.worth).slice(0,8).forEach(u=>{ lw.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${u.worth.toLocaleString()}</span></div>`; });
             [...arr].sort((a,b)=>b.rb-a.rb).slice(0,8).forEach(u=>{ lr.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>RB ${u.rb}</span></div>`; });
@@ -318,9 +303,7 @@ const App = {
     
     toggleBan(u, isBanned) {
         const action = isBanned ? "UNBAN" : "BAN";
-        if(confirm(`ARE YOU SURE YOU WANT TO ${action} USER: ${u}?`)) { 
-            DB.ref('users/' + u).update({ banned: !isBanned }); 
-        }
+        if(confirm(`ARE YOU SURE YOU WANT TO ${action} USER: ${u}?`)) { DB.ref('users/' + u).update({ banned: !isBanned }); }
     },
 
     omegaWipe() {
@@ -328,24 +311,30 @@ const App = {
             DB.ref('users').once('value', s => {
                 s.forEach(c => {
                     const userId = c.key;
-                    if(userId !== 'KING') {
-                        DB.ref('users/' + userId).update({
-                            gems: 500,
-                            rebirth: 0,
-                            timePlayed: 0,
-                            backpack: null,
-                            banned: false
-                        });
-                    }
+                    if(userId !== 'KING') { DB.ref('users/' + userId).update({ gems: 500, rebirth: 0, timePlayed: 0, backpack: null, banned: false }); }
                 });
                 alert("SYSTEM RESET COMPLETE.");
             });
         }
     },
+
     kingSetBoost() {
+        const rawMult = document.getElementById('k-boost-mult').value.toLowerCase().replace('x', '');
+        let mult = parseInt(rawMult);
         const sec = parseInt(document.getElementById('k-boost-time').value);
-        if(!isNaN(sec) && sec > 0) { DB.ref('system/boostEnd').set(Date.now() + (sec * 1000)); alert(`BOOST ACTIVATED`); }
+
+        if(isNaN(mult) || mult < 1) mult = 1;
+        if(mult > 10) mult = 10; // Max 10x
+
+        if(!isNaN(sec) && sec > 0) { 
+            DB.ref('system/boost').set({
+                end: Date.now() + (sec * 1000),
+                mult: mult
+            }); 
+            alert(`${mult}X BOOST ACTIVATED FOR ${sec}s`); 
+        }
     },
+
     generateColors() {
         const sel = document.getElementById('k-color-select'); if(!sel) return;
         for(let i=0; i<360; i+=8) { let hue = `hsl(${i}, 100%, 60%)`; let opt = document.createElement('option'); opt.value = hue; opt.innerText = `SPECTRUM V-${i}`; opt.style.color = hue; sel.appendChild(opt); }
@@ -364,67 +353,29 @@ const App = {
     
     nextQ() {
         let ans, display; const type = rand(1, 3);
-        
-        // LOGIC TO GENERATE THE CORRECT ANSWER FIRST
-        if (this.grade === 50) { 
-            let a = rand(1, 15), b = rand(1, 10); 
-            if (type === 1) { ans = a + b; display = `${a} + ${b}`; } 
-            else { a = Math.max(a, b); b = Math.min(a, b); ans = a - b; display = `${a} - ${b}`; } 
-        }
-        else if (this.grade === 75) { 
-            if (type === 1) { let a = rand(50, 200), b = rand(20, 150); ans = a + b; display = `${a} + ${b}`; } 
-            else if (type === 2) { let a = rand(2, 9), b = rand(2, 5); ans = a * b; display = `${a} × ${b}`; } 
-            else { let a = rand(100, 300), b = rand(10, 99); ans = a - b; display = `${a} - ${b}`; } 
-        }
-        else if (this.grade === 100) { 
-            if (type === 1) { let a = rand(12, 35), b = rand(11, 25); ans = a * b; display = `${a} × ${b}`; } 
-            else if (type === 2) { let b = rand(6, 12), ans_v = rand(12, 40); let a = b * ans_v; ans = ans_v; display = `${a} ÷ ${b}`; } 
-            else { let a = (rand(10, 50)/10).toFixed(1), b = (rand(10, 50)/10).toFixed(1); ans = (parseFloat(a) + parseFloat(b)).toFixed(1); display = `${a} + ${b}`; } 
-        }
-        else if (this.grade === 150) { 
-            if (type === 1) { let a = rand(-20, -1), b = rand(5, 25); ans = a + b; display = `(${a}) + ${b}`; } 
-            else if (type === 2) { let x = rand(5, 15), c = rand(2, 8), b = x * c; ans = x; display = `${c}x = ${b}`; } 
-            else { let p = [10, 20, 25, 50][rand(0,3)], val = rand(1, 10) * 20; ans = (p/100)*val; display = `${p}% of ${val}`; } 
-        }
-        else if (this.grade === 250) { 
-            if (type === 1) { let x = rand(2, 8), a = rand(2, 5), b = rand(5, 20), res = a*x + b; ans = x; display = `${a}x + ${b} = ${res}`; } 
-            else if (type === 2) { let a = rand(4, 15); ans = a; display = `√${a*a} = ?`; } 
-            else { let a = rand(2, 5), b = rand(2, 4); ans = Math.pow(a, b); display = `${a}^${b}`; } 
-        }
-        else { 
-            if (type === 1) { let c = rand(2, 5), e = rand(2, 4); ans = c * e; display = `d/dx ${c}x^${e} (at x=1)`; } 
-            else if (type === 2) { let a = rand(1, 4), d = rand(1, 4), b = rand(1, 4), c = rand(1, 4); ans = (a * d) - (b * c); display = `det [${a},${b}|${c},${d}]`; } 
-            else { let b = rand(2, 3), p = rand(2, 4); let v = Math.pow(b, p); ans = p; display = `log${b}(${v}) = ?`; } 
-        }
+        if (this.grade === 50) { let a = rand(1, 15), b = rand(1, 10); if (type === 1) { ans = a + b; display = `${a} + ${b}`; } else { a = Math.max(a, b); b = Math.min(a, b); ans = a - b; display = `${a} - ${b}`; } }
+        else if (this.grade === 75) { if (type === 1) { let a = rand(50, 200), b = rand(20, 150); ans = a + b; display = `${a} + ${b}`; } else if (type === 2) { let a = rand(2, 9), b = rand(2, 5); ans = a * b; display = `${a} × ${b}`; } else { let a = rand(100, 300), b = rand(10, 99); ans = a - b; display = `${a} - ${b}`; } }
+        else if (this.grade === 100) { if (type === 1) { let a = rand(12, 35), b = rand(11, 25); ans = a * b; display = `${a} × ${b}`; } else if (type === 2) { let b = rand(6, 12), ans_v = rand(12, 40); let a = b * ans_v; ans = ans_v; display = `${a} ÷ ${b}`; } else { let a = (rand(10, 50)/10).toFixed(1), b = (rand(10, 50)/10).toFixed(1); ans = (parseFloat(a) + parseFloat(b)).toFixed(1); display = `${a} + ${b}`; } }
+        else if (this.grade === 150) { if (type === 1) { let a = rand(-20, -1), b = rand(5, 25); ans = a + b; display = `(${a}) + ${b}`; } else if (type === 2) { let x = rand(5, 15), c = rand(2, 8), b = x * c; ans = x; display = `${c}x = ${b}`; } else { let p = [10, 20, 25, 50][rand(0,3)], val = rand(1, 10) * 20; ans = (p/100)*val; display = `${p}% of ${val}`; } }
+        else if (this.grade === 250) { if (type === 1) { let x = rand(2, 8), a = rand(2, 5), b = rand(5, 20), res = a*x + b; ans = x; display = `${a}x + ${b} = ${res}`; } else if (type === 2) { let a = rand(4, 15); ans = a; display = `√${a*a} = ?`; } else { let a = rand(2, 5), b = rand(2, 4); ans = Math.pow(a, b); display = `${a}^${b}`; } }
+        else { if (type === 1) { let c = rand(2, 5), e = rand(2, 4); ans = c * e; display = `d/dx ${c}x^${e} (at x=1)`; } else if (type === 2) { let a = rand(1, 4), d = rand(1, 4), b = rand(1, 4), c = rand(1, 4); ans = (a * d) - (b * c); display = `det [${a},${b}|${c},${d}]`; } else { let b = rand(2, 3), p = rand(2, 4); let v = Math.pow(b, p); ans = p; display = `log${b}(${v}) = ?`; } }
 
         const rewards = { 50: 100, 75: 200, 100: 300, 150: 400, 250: 600, 400: 800 };
         let pot = Math.floor((rewards[this.grade] || 100) * (1 + this.rebirth * 0.3));
-        if(this.boostActive) pot = pot * 2;
+        
+        // Multiplier applied here
+        if(this.boostActive) pot = Math.floor(pot * this.boostMultiplier);
         
         document.getElementById('q-text').innerText = display;
-        
-        // ENSURE ANS IS ALWAYS IN OPTIONS
-        let options = new Set(); 
-        options.add(ans);
-        
-        while(options.size < 4) { 
-            let offset = (Math.random() > 0.5 ? 1 : -1) * rand(1, 10); 
-            let fake = (typeof ans === 'string' && ans.includes('.')) ? (parseFloat(ans) + offset).toFixed(1) : ans + offset; 
-            if(fake != ans) options.add(fake); 
-        }
-        
+        let options = new Set(); options.add(ans);
+        while(options.size < 4) { let offset = (Math.random() > 0.5 ? 1 : -1) * rand(1, 10); let fake = (typeof ans === 'string' && ans.includes('.')) ? (parseFloat(ans) + offset).toFixed(1) : ans + offset; if(fake != ans) options.add(fake); }
         const grid = document.getElementById('opt-grid'); grid.innerHTML = '';
         Array.from(options).sort(() => Math.random() - 0.5).forEach(o => {
             const btn = document.createElement('button'); btn.className = 'math-opt'; btn.innerText = o;
             btn.onclick = () => { 
-                if (o == ans) { 
-                    this.gems += pot; 
-                    confetti({ particleCount: 30 }); 
-                } else { 
-                    this.gems = Math.max(0, this.gems - pot); 
-                } 
-                DB.ref('users/' + this.u).update({ gems: this.gems }); 
-                this.nextQ(); 
+                if (o == ans) { this.gems += pot; confetti({ particleCount: 30 }); } 
+                else { this.gems = Math.max(0, this.gems - pot); } 
+                DB.ref('users/' + this.u).update({ gems: this.gems }); this.nextQ(); 
             };
             grid.appendChild(btn);
         });
