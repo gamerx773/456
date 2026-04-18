@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V17.8</title>
+    <title>MATRIX: EVOLUTION V17.9</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -395,7 +395,6 @@ const App = {
         if(this.boostActive) pot = Math.floor(pot * this.boostMultiplier);
         
         document.getElementById('q-text').innerText = display;
-        console.log("System Answer:", ans); // Debugging
 
         // --- Option Handling ---
         let options = new Set(); 
@@ -418,8 +417,8 @@ const App = {
             btn.className = 'math-opt'; 
             btn.innerText = o;
             btn.onclick = () => { 
-                // CRITICAL FIX: Ensure precise matching
-                if (parseFloat(o) === parseFloat(ans)) { 
+                // FLOATING POINT FIX: Allows for tiny margin of error in decimals
+                if (Math.abs(parseFloat(o) - parseFloat(ans)) < 0.01) { 
                     this.gems += pot; 
                     confetti({ particleCount: 30 }); 
                 } else { 
