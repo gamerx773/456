@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V18.0</title>
+    <title>MATRIX: EVOLUTION V18.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -446,12 +446,33 @@ const App = {
                 const i = c.val(); if(i.tier !== this.shopTab) return; 
                 let displayPrice = i.price;
                 if(this.eventActive === 'glitch') displayPrice = Math.floor(displayPrice * 0.9);
-                list.innerHTML += `<div class="panel" style="text-align:center;"><b>${i.icon} ${i.name}</b><p>${displayPrice.toLocaleString()}💎 (Stock: ${i.stock}) ${this.eventActive==='glitch'?'<span style="color:var(--green)">(-10%)</span>':''}</p><button class="action-btn" onclick="App.buyItem('${c.key}', ${displayPrice})" ${i.stock<=0?'disabled':''}>BUY</button></div>`; 
+                list.innerHTML += `<div class="panel" style="text-align:center;"><b>${i.icon} ${i.name}</b><p>${displayPrice.toLocaleString()}💎 (Stock: ${i.stock}) ${this.eventActive==='glitch'?'<span style="color:var(--green)">(-10%)</span>':''}</p><button class="action-btn" onclick="App.buyItem('${c.key}', ${displayPrice}, '${i.name}', '${i.icon}')" ${i.stock<=0?'disabled':''}>BUY</button></div>`; 
             }); 
         });
     },
-    async buyItem(k, finalPrice) { if(this.gems >= finalPrice) { this.gems -= finalPrice; DB.ref('users/'+this.u).update({gems: this.gems}); DB.ref('users/'+this.u+'/backpack').push({key:k}); DB.ref('system/shop/'+k+'/stock').transaction(c => c - 1); } },
-    openCollection() { Router.go('collection'); const g = document.getElementById('bp-grid'); g.innerHTML = ''; DB.ref('users/'+this.u+'/backpack').once('value', s => { if(s.exists()) s.forEach(c => { g.innerHTML += `<div class="bp-item">🎒</div>`; }); else g.innerHTML = "<p>EMPTY</p>"; }); },
+    async buyItem(k, finalPrice, name, icon) { 
+        if(this.gems >= finalPrice) { 
+            this.gems -= finalPrice; 
+            DB.ref('users/'+this.u).update({gems: this.gems}); 
+            DB.ref('users/'+this.u+'/backpack').push({name: name, icon: icon}); 
+            DB.ref('system/shop/'+k+'/stock').transaction(c => c - 1); 
+        } 
+    },
+    openCollection() { 
+        Router.go('collection'); 
+        const g = document.getElementById('bp-grid'); 
+        g.innerHTML = ''; 
+        DB.ref('users/'+this.u+'/backpack').once('value', s => { 
+            if(s.exists()) {
+                s.forEach(c => { 
+                    const i = c.val();
+                    g.innerHTML += `<div class="bp-item"><div>${i.icon}</div><div style="font-size:0.5rem">${i.name}</div></div>`; 
+                }); 
+            } else {
+                g.innerHTML = "<p>EMPTY</p>"; 
+            }
+        }); 
+    },
     drawKingTools() { const rl = document.getElementById('k-restock-list'); DB.ref('system/shop').on('value', s => { rl.innerHTML = ''; s.forEach(c => { const d = c.val(); const inputId = `stock-in-${c.key}`; rl.innerHTML += `<div class="restock-row"><div style="width:100%; margin-bottom:5px;">${d.icon} ${d.name} (Cur: ${d.stock})</div><input type="number" id="${inputId}" class="input-field" style="width:40%; margin:0; font-size:0.7rem;" placeholder="NEW STOCK"><button class="restock-btn" style="background:var(--neon); border:none; padding:8px; font-family:'Orbitron'; font-size:0.6rem; color:black;" onclick="App.setExactStock('${c.key}', '${inputId}')">SET</button><button class="restock-btn" style="background:var(--red); border:none; padding:8px; font-family:'Orbitron'; font-size:0.6rem; color:white;" onclick="App.deleteShopItem('${c.key}')">DEL</button></div>`; }); }); },
     setExactStock(k, inputId) { const val = parseInt(document.getElementById(inputId).value); if(!isNaN(val)) { DB.ref('system/shop/'+k+'/stock').set(val); document.getElementById(inputId).value = ''; } },
     deleteShopItem(k) { if(confirm("DELETE THIS ITEM?")) DB.ref('system/shop/'+k).remove(); },
