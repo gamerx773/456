@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V19.0</title>
+    <title>MATRIX: EVOLUTION V19.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -68,6 +68,7 @@
         <div class="menu-link" onclick="App.openCollection(); toggleMenu()">BACKPACK</div>
         <div class="menu-link" onclick="Router.go('rank'); toggleMenu()">RANKINGS</div>
         <div id="king-link" class="menu-link" style="display:none; color:var(--gold);" onclick="Router.go('king'); toggleMenu()">KING TERMINAL</div>
+        <div class="menu-link" style="color:var(--red); margin-top:30px;" onclick="Auth.logout(); toggleMenu()">LOG OUT</div>
     </div>
 
     <div id="hud">
@@ -228,6 +229,16 @@ const Auth = {
             if(u === 'KING') document.getElementById('king-link').style.display='block';
             App.init(d); Router.go('core');
         } else { alert("INVALID PASSCODE"); }
+    },
+    logout() {
+        document.getElementById('screen-auth').style.display = 'flex';
+        document.getElementById('hud').style.display = 'none';
+        document.querySelectorAll('.screen').forEach(s => { if(s.id !== 'screen-auth') s.style.display = 'none'; });
+        document.getElementById('auth-u').value = '';
+        document.getElementById('auth-p').value = '';
+        document.getElementById('king-link').style.display = 'none';
+        // Stop current user listeners
+        if(App.u) DB.ref('users/' + App.u).off();
     }
 };
 
@@ -247,7 +258,8 @@ const App = {
         this.boostActive = false; this.boostMultiplier = 1; this.eventActive = null; this.streak = 0;
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
-        setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
+        if(this.timer) clearInterval(this.timer);
+        this.timer = setInterval(() => { if(this.u) DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
     getTag(rb) { if(rb >= 20) return 'tag-gold'; if(rb >= 10) return 'tag-pink'; if(rb >= 5) return 'tag-neon'; return ''; },
     setupSync() {
@@ -306,7 +318,7 @@ const App = {
             s.forEach(c => { 
                 const d = c.val(); if(d && d.name !== 'KING') { 
                     d.rb = Number(d.rebirth) || 0; 
-                    let v = 0; if(d.backpack) Object.values(d.backpack).forEach(i => v += Number(i.price||0));
+                    let v = 0; if(d.backpack) Object.values(d.backpack).forEach(i => v += Number(i.worth||i.price||0));
                     d.worth = v; const isBanned = d.banned === true;
                     pm.innerHTML += `<div class="lb-row" style="background:${isBanned?'rgba(255,0,0,0.1)':'transparent'}"><span>${d.name} ${isBanned?'<b style="color:red">[BANNED]</b>':''}</span><div><button onclick="App.toggleBan('${d.name}', ${isBanned})" style="background:${isBanned? 'var(--green)' : 'var(--red)'}; color:white; border:none; padding:4px 8px; font-size:0.6rem; border-radius:4px; cursor:pointer; font-family:'Orbitron';">${isBanned?'UNBAN':'BAN'}</button></div></div>`;
                     if(!isBanned) arr.push(d); 
@@ -372,7 +384,7 @@ const App = {
                         this.gems += bonus;
                         alert(`🏆 30-STREAK ACHIEVED! +${bonus.toLocaleString()} GEMS`);
                         confetti({ particleCount: 150, spread: 70 });
-                        this.streak = 0; // Reset after win
+                        this.streak = 0;
                     }
                     confetti({ particleCount: 30 }); 
                 } else { 
@@ -401,7 +413,7 @@ const App = {
             }); 
         });
     },
-    async buyItem(k, finalPrice, name, icon) { if(this.gems >= finalPrice) { this.gems -= finalPrice; DB.ref('users/'+this.u).update({gems: this.gems}); DB.ref('users/'+this.u+'/backpack').push({name: name, icon: icon}); DB.ref('system/shop/'+k+'/stock').transaction(c => c - 1); } },
+    async buyItem(k, finalPrice, name, icon) { if(this.gems >= finalPrice) { this.gems -= finalPrice; DB.ref('users/'+this.u).update({gems: this.gems}); DB.ref('users/'+this.u+'/backpack').push({name: name, icon: icon, worth: finalPrice}); DB.ref('system/shop/'+k+'/stock').transaction(c => c - 1); } },
     openCollection() { Router.go('collection'); const g = document.getElementById('bp-grid'); g.innerHTML = ''; DB.ref('users/'+this.u+'/backpack').once('value', s => { if(s.exists()) s.forEach(c => { const i = c.val(); g.innerHTML += `<div class="bp-item"><div>${i.icon}</div><div style="font-size:0.5rem">${i.name}</div></div>`; }); else g.innerHTML = "<p>EMPTY</p>"; }); },
     drawKingTools() { const rl = document.getElementById('k-restock-list'); DB.ref('system/shop').on('value', s => { rl.innerHTML = ''; s.forEach(c => { const d = c.val(); const inputId = `stock-in-${c.key}`; rl.innerHTML += `<div class="restock-row"><div style="width:100%; margin-bottom:5px;">${d.icon} ${d.name} (Cur: ${d.stock})</div><input type="number" id="${inputId}" class="input-field" style="width:40%; margin:0; font-size:0.7rem;" placeholder="NEW STOCK"><button class="restock-btn" style="background:var(--neon); border:none; padding:8px; font-family:'Orbitron'; font-size:0.6rem; color:black;" onclick="App.setExactStock('${c.key}', '${inputId}')">SET</button><button class="restock-btn" style="background:var(--red); border:none; padding:8px; font-family:'Orbitron'; font-size:0.6rem; color:white;" onclick="App.deleteShopItem('${c.key}')">DEL</button></div>`; }); }); },
     setExactStock(k, inputId) { const val = parseInt(document.getElementById(inputId).value); if(!isNaN(val)) { DB.ref('system/shop/'+k+'/stock').set(val); document.getElementById(inputId).value = ''; } },
