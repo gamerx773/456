@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V21.0</title>
+    <title>MATRIX: EVOLUTION V22.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono&display=swap');
-        :root { --neon: #00f2ff; --pink: #ff007a; --gold: #f1c40f; --bg: #000; --glass: rgba(15, 15, 30, 0.96); --red: #ff3e3e; --green: #2ecc71; --purple: #a020f0; }
+        :root { --neon: #00f2ff; --pink: #ff007a; --gold: #f1c40f; --bg: #000; --glass: rgba(15, 15, 30, 0.96); --red: #ff3e3e; --green: #2ecc71; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: white; font-family: 'JetBrains Mono', monospace; }
         canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
@@ -62,10 +62,10 @@
 <body>
     <canvas id="world"></canvas>
 
-    <!-- NEW LUCKY BLOCK SLOT INTERFACE -->
+    <!-- LUCKY ROLL OVERLAY -->
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
-            <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px; text-shadow: 0 0 10px var(--gold);">BREACHING DATA...</h2>
+            <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
             <div class="slot-window">
                 <div id="slot-strip" class="slot-strip"></div>
             </div>
@@ -127,7 +127,6 @@
     </div>
 
     <div id="screen-shop" class="screen">
-        <!-- ADDED LUCKY BLOCK TO SHOP -->
         <div class="panel" style="text-align:center; border: 2px solid var(--gold); background: rgba(241,196,15,0.05);">
             <h4 style="margin:0; color:var(--gold);">🍀 LUCKY BLOCK</h4>
             <p style="font-size:0.7rem; margin:5px 0;">COST: 10,000💎</p>
@@ -248,6 +247,7 @@ const App = {
     init(d) {
         this.u = d.name; this.gems = d.gems; this.rebirth = Number(d.rebirth) || 0; this.grade = 50; this.shopTab = 'normal';
         this.boostActive = false; this.boostMultiplier = 1;
+        this.personalBoost = 1; this.personalBoostEnd = 0; // LOCAL 5X LOGIC
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
         setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
@@ -268,7 +268,13 @@ const App = {
             if(this.boostInterval) clearInterval(this.boostInterval);
             this.boostInterval = setInterval(() => {
                 const diff = Math.ceil((data.end - Date.now()) / 1000);
-                if(diff > 0) {
+                const pDiff = Math.ceil((this.personalBoostEnd - Date.now()) / 1000);
+
+                if(pDiff > 0) { // PERSONAL BOOST OVERRIDES
+                    this.boostActive = true; this.boostMultiplier = this.personalBoost;
+                    document.getElementById('royal-banner').innerText = `🌀 PERSONAL 5X GLITCH: ${pDiff}s 🌀`;
+                    document.getElementById('royal-banner').style.background = 'var(--pink)';
+                } else if(diff > 0) { // GLOBAL BOOST
                     this.boostActive = true; this.boostMultiplier = data.mult || 1;
                     document.getElementById('royal-banner').innerText = `⚡ ${this.boostMultiplier}X GEMS ACTIVE: ${diff}s ⚡`;
                     document.getElementById('royal-banner').style.background = 'var(--neon)';
@@ -287,16 +293,13 @@ const App = {
 
         DB.ref('users').on('value', s => {
             const lg = document.getElementById('lb-gems'), lr = document.getElementById('lb-rebirth'), lt = document.getElementById('lb-time'), lw = document.getElementById('lb-worth'), pm = document.getElementById('k-player-monitor');
-            if(!lg) return;
-            lg.innerHTML = ''; lr.innerHTML = ''; lt.innerHTML = ''; lw.innerHTML = ''; pm.innerHTML = '';
-            let arr = [];
-            s.forEach(c => { const d = c.val(); if(d && d.name !== 'KING') arr.push(d); });
-            [...arr].sort((a,b)=>b.gems-a.gems).slice(0,8).forEach(u=>{ lg.innerHTML += `<div class="lb-row"><span>${u.name}</span><span>${Math.floor(u.gems).toLocaleString()}</span></div>`; });
-            [...arr].sort((a,b)=>b.rb-a.rb).slice(0,8).forEach(u=>{ lr.innerHTML += `<div class="lb-row"><span>${u.name}</span><span>RB ${u.rb}</span></div>`; });
+            if(!lg) return; lg.innerHTML = ''; lr.innerHTML = ''; lt.innerHTML = ''; lw.innerHTML = ''; pm.innerHTML = '';
+            let arr = []; s.forEach(c => { const d = c.val(); if(d && d.name !== 'KING') arr.push(d); });
+            [...arr].sort((a,b)=>b.gems-a.gems).slice(0,8).forEach(u=>{ lg.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${Math.floor(u.gems).toLocaleString()}</span></div>`; });
+            [...arr].sort((a,b)=>b.rb-a.rb).slice(0,8).forEach(u=>{ lr.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>RB ${u.rb}</span></div>`; });
         });
     },
 
-    // LUCKY BLOCK LOGIC
     buyLuckyBlock() {
         if(this.gems < 10000) return alert("NOT ENOUGH GEMS");
         this.gems -= 10000;
@@ -304,17 +307,12 @@ const App = {
         this.startSlotAnimation();
     },
     startSlotAnimation() {
-        const overlay = document.getElementById('screen-lucky-roll');
-        const strip = document.getElementById('slot-strip');
-        const container = document.getElementById('slot-container');
-        const resultScreen = document.getElementById('lucky-result-screen');
-        overlay.style.display = 'flex';
-        container.style.display = 'block';
-        resultScreen.style.display = 'none';
+        const overlay = document.getElementById('screen-lucky-roll'), strip = document.getElementById('slot-strip'), container = document.getElementById('slot-container'), resultScreen = document.getElementById('lucky-result-screen');
+        overlay.style.display = 'flex'; container.style.display = 'block'; resultScreen.style.display = 'none';
 
         const pool = [
             { n: "ADMIN WITCH", i: "🧙‍♀️", d: "ADMIN TERMINAL ACCESS GRANTED" },
-            { n: "GLITCH (5X)", i: "🌀", d: "GLOBAL 5X BOOST INJECTED" },
+            { n: "GLITCH (5X)", i: "🌀", d: "YOUR MINING POWER IS 5X FOR 2 MINS" },
             { n: "LOST CONNECTION", i: "📡", d: "+3,000 GEMS RESTORED" },
             { n: "NOOOOOO", i: "😭", d: "+1,000 GEMS CONSOLATION" }
         ];
@@ -327,23 +325,14 @@ const App = {
 
         strip.innerHTML = '';
         for(let i=0; i<40; i++) {
-            const div = document.createElement('div');
-            div.className = 'slot-item';
+            const div = document.createElement('div'); div.className = 'slot-item';
             div.innerText = pool[Math.floor(Math.random()*pool.length)].i;
-            if(i === 37) div.innerText = this.prize.i;
-            strip.appendChild(div);
+            if(i === 37) div.innerText = this.prize.i; strip.appendChild(div);
         }
-
-        strip.style.transition = 'none';
-        strip.style.top = '0px';
+        strip.style.transition = 'none'; strip.style.top = '0px';
+        setTimeout(() => { strip.style.transition = 'top 3s cubic-bezier(0.45, 0.05, 0.55, 0.95)'; strip.style.top = `-${37 * 140}px`; }, 50);
         setTimeout(() => {
-            strip.style.transition = 'top 3s cubic-bezier(0.45, 0.05, 0.55, 0.95)';
-            strip.style.top = `-${37 * 140}px`;
-        }, 50);
-
-        setTimeout(() => {
-            container.style.display = 'none';
-            resultScreen.style.display = 'block';
+            container.style.display = 'none'; resultScreen.style.display = 'block';
             document.getElementById('lucky-title').innerText = this.prize.n;
             document.getElementById('lucky-desc').innerText = this.prize.d;
             confetti({ particleCount: 150, spread: 70 });
@@ -352,7 +341,7 @@ const App = {
     claimLuckyReward() {
         const p = this.prize;
         if(p.n === "ADMIN WITCH") DB.ref('users/' + this.u).update({ isAdmin: true });
-        else if(p.n === "GLITCH (5X)") DB.ref('system/boost').set({ end: Date.now() + 120000, mult: 5 });
+        else if(p.n === "GLITCH (5X)") { this.personalBoost = 5; this.personalBoostEnd = Date.now() + 120000; }
         else if(p.n === "LOST CONNECTION") { this.gems += 3000; DB.ref('users/' + this.u).update({ gems: this.gems }); }
         else { this.gems += 1000; DB.ref('users/' + this.u).update({ gems: this.gems }); }
         document.getElementById('screen-lucky-roll').style.display = 'none';
@@ -381,8 +370,7 @@ const App = {
         const grid = document.getElementById('opt-grid'); grid.innerHTML = '';
         Array.from(options).sort(() => Math.random() - 0.5).forEach(o => {
             const btn = document.createElement('button'); btn.className = 'math-opt'; btn.innerText = o;
-            btn.onclick = () => { if (Math.abs(parseFloat(o) - parseFloat(ans)) < 0.01) { this.gems += pot; confetti({ particleCount: 30 }); } else { this.gems = Math.max(0, this.gems - Math.floor(pot/2)); } DB.ref('users/' + this.u).update({ gems: this.gems }); this.nextQ(); };
-            grid.appendChild(btn);
+            btn.onclick = () => { if (Math.abs(parseFloat(o) - parseFloat(ans)) < 0.01) { this.gems += pot; confetti({ particleCount: 30 }); } else { this.gems = Math.max(0, this.gems - Math.floor(pot/2)); } DB.ref('users/' + this.u).update({ gems: this.gems }); this.nextQ(); }; grid.appendChild(btn);
         });
     },
     switchShopTab(t) { if(t === 'crown' && this.rebirth < 5) { alert("RB 5+ REQ"); return; } this.shopTab = t; this.drawShop(); },
