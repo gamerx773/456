@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V19.1</title>
+    <title>MATRIX: EVOLUTION V20.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -113,6 +113,11 @@
     </div>
 
     <div id="screen-shop" class="screen">
+        <div class="panel" style="text-align:center; border-color:var(--gold);">
+            <h4 style="margin:0; color:var(--gold);">🍀 LUCKY BLOCK</h4>
+            <p style="font-size:0.7rem; margin:5px 0;">COST: 10,000💎</p>
+            <button id="btn-lucky" class="action-btn" style="background:var(--gold); color:black;" onclick="App.buyLuckyBlock()">OPEN LUCKY BLOCK</button>
+        </div>
         <div class="panel" style="text-align:center;">
             <p id="rb-cost-preview" style="color:var(--pink); font-size:0.8rem; margin:0;">RB COST: ---</p>
             <button id="btn-rebirth" class="action-btn">EXECUTE REBIRTH</button>
@@ -226,7 +231,7 @@ const Auth = {
         if(d.pass === p) {
             document.getElementById('screen-auth').style.display='none';
             document.getElementById('hud').style.display='flex';
-            if(u === 'KING') document.getElementById('king-link').style.display='block';
+            if(u === 'KING' || d.isAdmin) document.getElementById('king-link').style.display='block';
             App.init(d); Router.go('core');
         } else { alert("INVALID PASSCODE"); }
     },
@@ -237,7 +242,6 @@ const Auth = {
         document.getElementById('auth-u').value = '';
         document.getElementById('auth-p').value = '';
         document.getElementById('king-link').style.display = 'none';
-        // Stop current user listeners
         if(App.u) DB.ref('users/' + App.u).off();
     }
 };
@@ -267,6 +271,7 @@ const App = {
             const v = s.val(); if(!v) return;
             if(v.banned === true) { alert("YOU HAVE BEEN BANNED FROM THE MATRIX."); location.reload(); return; }
             this.gems = v.gems; this.rebirth = Number(v.rebirth) || 0;
+            if(v.isAdmin) document.getElementById('king-link').style.display='block';
             document.getElementById('gems-display').innerText = Math.floor(this.gems).toLocaleString();
             document.getElementById('rb-display').innerText = this.rebirth;
             if(v.color) document.documentElement.style.setProperty('--neon', v.color);
@@ -333,7 +338,7 @@ const App = {
     
     resetBanner() { if(!this.boostActive && !this.eventActive) { document.getElementById('royal-banner').innerText = this.broadcastMsg || "SYSTEM ONLINE"; document.getElementById('royal-banner').style.background = 'var(--gold)'; } },
     toggleBan(u, isBanned) { if(confirm(`ARE YOU SURE YOU WANT TO ${isBanned?'UNBAN':'BAN'} USER: ${u}?`)) { DB.ref('users/' + u).update({ banned: !isBanned }); } },
-    omegaWipe() { if(confirm("⚠️ WIPE ALL PLAYERS?")) { DB.ref('users').once('value', s => { s.forEach(c => { if(c.key !== 'KING') DB.ref('users/' + c.key).update({ gems: 500, rebirth: 0, timePlayed: 0, backpack: null, banned: false }); }); alert("SYSTEM RESET COMPLETE."); }); } },
+    omegaWipe() { if(confirm("⚠️ WIPE ALL PLAYERS?")) { DB.ref('users').once('value', s => { s.forEach(c => { if(c.key !== 'KING') DB.ref('users/' + c.key).update({ gems: 500, rebirth: 0, timePlayed: 0, backpack: null, banned: false, isAdmin: false }); }); alert("SYSTEM RESET COMPLETE."); }); } },
     kingSetEvent() {
         const type = document.getElementById('k-event-type').value;
         const sec = parseInt(document.getElementById('k-event-time').value);
@@ -396,6 +401,54 @@ const App = {
             };
             grid.appendChild(btn);
         });
+    },
+
+    buyLuckyBlock() {
+        if(this.gems < 10000) return alert("NOT ENOUGH GEMS");
+        this.gems -= 10000;
+        DB.ref('users/' + this.u).update({ gems: this.gems });
+        
+        const btn = document.getElementById('btn-lucky');
+        btn.disabled = true;
+        let rollCount = 0;
+        const items = ["ADMIN WITCH", "GLITCH (5X)", "LOST CONN.", "NOOOOOO"];
+        
+        const interval = setInterval(() => {
+            btn.innerText = items[rollCount % items.length];
+            rollCount++;
+            if(rollCount > 15) {
+                clearInterval(interval);
+                this.resolveLuckyBlock();
+                btn.disabled = false;
+            }
+        }, 100);
+    },
+
+    resolveLuckyBlock() {
+        const roll = Math.random() * 100;
+        let result = "";
+        
+        if(roll < 1) {
+            result = "ADMIN WITCH 🧙‍♀️";
+            DB.ref('users/' + this.u).update({ isAdmin: true });
+            alert("JACKPOT! YOU ARE NOW AN ADMIN.");
+            confetti({ particleCount: 200, spread: 90 });
+        } else if (roll < 16) {
+            result = "GLITCH (5X BOOST) 🌀";
+            DB.ref('system/boost').set({ end: Date.now() + 120000, mult: 5 });
+            alert("GLITCH TRIGGERED: 5X GLOBAL BOOST FOR 2 MINS!");
+        } else if (roll < 46) {
+            result = "LOST CONNECTION 📡";
+            this.gems += 3000;
+            DB.ref('users/' + this.u).update({ gems: this.gems });
+            alert("RECOVERED: +3,000 GEMS");
+        } else {
+            result = "NOOOOOO 😭";
+            this.gems += 1000;
+            DB.ref('users/' + this.u).update({ gems: this.gems });
+            alert("BETTER LUCK NEXT TIME: +1,000 GEMS");
+        }
+        document.getElementById('btn-lucky').innerText = "OPEN LUCKY BLOCK";
     },
 
     switchShopTab(t) { if(t === 'crown' && this.rebirth < 5) { alert("RB 5+ REQ"); return; } this.shopTab = t; this.drawShop(); },
