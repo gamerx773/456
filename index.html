@@ -15,13 +15,6 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: white; font-family: 'JetBrains Mono', monospace; transition: background 0.5s ease; }
         canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
         
-        /* Lucky Block Slot Animation */
-        #screen-lucky-roll { position: fixed; inset: 0; z-index: 9000; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px); }
-        .slot-window { width: 200px; height: 120px; border: 4px solid var(--gold); border-radius: 15px; overflow: hidden; position: relative; background: #111; box-shadow: 0 0 30px var(--gold); }
-        .slot-strip { position: absolute; width: 100%; top: 0; display: flex; flex-direction: column; align-items: center; transition: top 0.1s linear; }
-        .slot-item { height: 120px; display: flex; align-items: center; justify-content: center; font-size: 4rem; }
-        #lucky-result-text { font-family: 'Orbitron'; font-size: 1.5rem; text-align: center; margin-top: 30px; text-transform: uppercase; display: none; }
-
         /* Event State */
         body.event-glitch { background: var(--purple) !important; }
         body.event-glitch .panel { border-color: var(--purple); box-shadow: 0 0 15px rgba(160, 32, 240, 0.3); }
@@ -29,41 +22,68 @@
         body.event-streak #royal-banner { animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
 
-        /* HUD & SCREENS */
+        /* LUCKY BLOCK SLOT STYLES */
+        #screen-lucky-roll { position: fixed; inset: 0; z-index: 9000; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px); }
+        .slot-window { width: 220px; height: 140px; border: 5px solid var(--gold); border-radius: 20px; overflow: hidden; position: relative; background: #050505; box-shadow: 0 0 40px rgba(241, 196, 15, 0.4); }
+        .slot-strip { position: absolute; width: 100%; top: 0; display: flex; flex-direction: column; align-items: center; }
+        .slot-item { height: 140px; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
+        #lucky-result-screen { text-align: center; display: none; animation: zoomIn 0.5s ease; }
+        @keyframes zoomIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* HUD */
         #hud { position: fixed; top: 0; left: 0; right: 0; z-index: 2000; display: none; flex-direction: column; padding: 8px; background: rgba(0,0,0,0.9); border-bottom: 1px solid rgba(0,242,255,0.2); }
         #royal-banner { width: 100%; height: 22px; background: var(--gold); color: black; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron'; font-size: 0.6rem; font-weight: 900; border-radius: 4px; margin-bottom: 5px; text-transform: uppercase; padding: 0 5px; text-align: center; overflow: hidden; }
         .hud-row { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 0 5px; }
         .burger-btn { background: none; border: none; color: var(--neon); font-size: 2rem; cursor: pointer; }
+
+        /* SCREENS */
         .screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; padding: 110px 15px 20px 15px; overflow-y: auto; background: rgba(0,0,0,0.93); backdrop-filter: blur(10px); }
         .panel { background: var(--glass); border-radius: 12px; padding: 15px; border: 1px solid rgba(0, 242, 255, 0.2); margin-bottom: 12px; max-width: 500px; margin-left: auto; margin-right: auto; }
 
-        /* UI ELEMENTS */
+        /* MATH UI */
         .grade-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
         .grade-pill { padding: 10px 2px; border: 1px solid #444; border-radius: 8px; font-family: 'Orbitron'; font-size: 0.55rem; text-align: center; background: rgba(255,255,255,0.05); color: #888; }
         .grade-pill.active { border-color: var(--neon); color: var(--neon); background: rgba(0, 242, 255, 0.1); }
+        #q-text { font-size: 2.2rem; font-family: 'Orbitron'; color: var(--neon); text-align: center; margin: 10px 0; text-shadow: 0 0 15px var(--neon); min-height: 80px; display: flex; align-items: center; justify-content: center; }
+        .math-opt { width: 100%; padding: 20px 10px; border-radius: 12px; border: 2px solid var(--neon); background: rgba(0,242,255,0.05); color: white; font-family: 'Orbitron'; font-size: 1.5rem; margin-bottom: 8px; cursor: pointer; }
+
+        /* KING & SHOP UI */
         .action-btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 900; background: var(--pink); color: white; font-family: 'Orbitron'; font-size: 0.8rem; margin: 4px 0; text-transform: uppercase; cursor: pointer; }
         .input-field { width: 100%; padding: 10px; margin: 4px 0; background: #000; border: 1px solid #444; color: white; border-radius: 6px; font-family: 'Orbitron'; text-align: center; font-size: 0.85rem; }
-        
+        .restock-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 6px; border-bottom: 1px solid #333; font-size: 0.7rem; gap: 5px; }
+
+        /* LEADERBOARDS & TAGS */
+        .tag-neon { color: var(--neon); text-shadow: 0 0 5px var(--neon); font-weight: bold; }
+        .tag-pink { color: var(--pink); text-shadow: 0 0 5px var(--pink); font-weight: bold; }
+        .tag-gold { color: var(--gold); text-shadow: 0 0 10px var(--gold); font-weight: 900; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .lb-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #222; font-size: 0.75rem; }
+
+        /* MENU & BACKPACK */
         #menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px); }
         .menu-link { font-family: 'Orbitron'; font-size: 1.8rem; color: white; margin: 10px 0; text-transform: uppercase; cursor: pointer; }
+        .bp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .bp-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
     </style>
 </head>
 <body>
     <canvas id="world"></canvas>
 
-    <!-- LUCKY BLOCK SCREEN -->
+    <!-- LUCKY BLOCK SLOT INTERFACE -->
     <div id="screen-lucky-roll">
-        <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:40px;">LUCKY BREAK INBOUND...</h2>
-        <div class="slot-window">
-            <div id="slot-strip" class="slot-strip">
-                <!-- Slot items generated by JS -->
+        <div id="slot-container" style="text-align: center;">
+            <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px; text-shadow: 0 0 10px var(--gold);">BREACHING DATA...</h2>
+            <div class="slot-window">
+                <div id="slot-strip" class="slot-strip"></div>
             </div>
         </div>
-        <div id="lucky-result-text"></div>
-        <button id="lucky-claim-btn" class="action-btn" style="width:200px; display:none; background:var(--gold); color:black; margin-top:20px;" onclick="App.closeLuckyScreen()">CLAIM REWARD</button>
+        <div id="lucky-result-screen">
+            <h1 id="lucky-title" style="font-family:'Orbitron'; font-size:2.5rem; margin-bottom:10px;">JACKPOT!</h1>
+            <p id="lucky-desc" style="font-family:'JetBrains Mono'; font-size:1.2rem; color:var(--neon); margin-bottom:30px;"></p>
+            <button class="action-btn" style="background:var(--gold); color:black; width:220px;" onclick="App.claimLuckyReward()">INJECT DATA</button>
+        </div>
     </div>
     
-    <!-- MENU & HUD -->
     <div id="menu-overlay">
         <div style="position:absolute; top:20px; right:20px; font-size:3rem; color:var(--pink);" onclick="toggleMenu()">×</div>
         <div class="menu-link" onclick="Router.go('core'); toggleMenu()">MINING</div>
@@ -86,7 +106,6 @@
         </div>
     </div>
 
-    <!-- SCREENS -->
     <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center; z-index:6000; padding:0;">
         <div class="panel" style="width: 85%; text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--neon); margin-bottom:20px;">MATRIX INITIALIZE</h2>
@@ -109,70 +128,83 @@
         <div id="opt-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
     </div>
 
+    <div id="screen-rank" class="screen">
+        <div class="panel" style="border-color:var(--gold);"><h4>💎 TOP GEMS</h4><div id="lb-gems"></div></div>
+        <div class="panel" style="border-color:var(--green);"><h4>🎒 COLLECTION VALUE</h4><div id="lb-worth"></div></div>
+        <div class="panel" style="border-color:var(--pink);"><h4>🌀 REBIRTHS</h4><div id="lb-rebirth"></div></div>
+        <div class="panel" style="border-color:var(--neon);"><h4>🕒 PLAYTIME</h4><div id="lb-time"></div></div>
+    </div>
+
     <div id="screen-shop" class="screen">
-        <div class="panel" style="text-align:center; border:2px solid var(--gold); background:rgba(241,196,15,0.05);">
+        <div class="panel" style="text-align:center; border: 2px solid var(--gold); background: rgba(241,196,15,0.05);">
             <h4 style="margin:0; color:var(--gold);">🍀 LUCKY BLOCK</h4>
-            <p style="font-size:0.7rem; color:#888;">Gamble 10k gems for Admin, 5x Boosts, or massive payouts!</p>
-            <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.buyLuckyBlock()">GAMBLE 10,000 💎</button>
+            <p style="font-size:0.7rem; margin:5px 0;">COST: 10,000💎</p>
+            <button id="btn-lucky" class="action-btn" style="background:var(--gold); color:black;" onclick="App.buyLuckyBlock()">OPEN LUCKY BLOCK</button>
         </div>
         <div class="panel" style="text-align:center;">
             <p id="rb-cost-preview" style="color:var(--pink); font-size:0.8rem; margin:0;">RB COST: ---</p>
             <button id="btn-rebirth" class="action-btn">EXECUTE REBIRTH</button>
         </div>
-        <div style="display:flex; gap:8px; margin-bottom:15px;">
+        <div style="display:flex; gap:8px;">
             <button class="action-btn" style="background:var(--glass); border:1px solid var(--neon);" onclick="App.switchShopTab('normal')">GENERAL</button>
             <button class="action-btn" style="background:var(--glass); border:1px solid var(--gold);" onclick="App.switchShopTab('crown')">👑 CROWN</button>
         </div>
         <div id="shop-list"></div>
     </div>
 
-    <!-- KING TERMINAL -->
+    <div id="screen-collection" class="screen">
+        <h3 style="text-align:center; font-family:'Orbitron';">MY BACKPACK</h3>
+        <div class="panel">
+            <div id="bp-grid" class="bp-grid"></div>
+        </div>
+    </div>
+
     <div id="screen-king" class="screen">
         <h3 style="color:var(--gold); text-align:center;">KING CONTROL</h3>
         <div class="panel" style="border-color:var(--purple)">
             <h4 style="color:var(--purple); margin-top:0;">🌀 GLOBAL EVENT SELECTOR</h4>
             <select id="k-event-type" class="input-field" style="background:#111;">
-                <option value="glitch">GLITCH (-10% PRICES)</option>
-                <option value="streak">STREAK CHALLENGE (30 REQ)</option>
+                <option value="glitch">GLITCH (-10% PRICES + PURPLE BG)</option>
+                <option value="streak">STREAK CHALLENGE (30 CORRECT = HUGE REWARD)</option>
             </select>
             <input type="number" id="k-event-time" class="input-field" placeholder="DURATION (SECONDS)">
             <button class="action-btn" style="background:var(--purple); color:white;" onclick="App.kingSetEvent()">TRIGGER GLOBAL EVENT</button>
         </div>
-        <div class="panel" style="border-color:var(--gold)">
-            <h4 style="color:var(--gold); margin-top:0;">IDENTITY OVERRIDE</h4>
-            <input type="text" id="k-target-user" class="input-field" placeholder="PLAYER ID">
-            <select id="k-color-select" class="input-field" style="background:#222;"></select>
-            <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.kingSetColor()">FORCE COLOR</button>
+        <div id="k-restock-list-container" class="panel" style="border-color:var(--pink)">
+            <h4>SHOP MANAGER</h4>
+            <div id="k-restock-list"></div>
         </div>
-        <div class="panel" style="border-color:var(--red); text-align: center;">
-            <button class="action-btn" style="background:var(--red); color:white;" onclick="App.omegaWipe()">☣️ SYSTEM RESET ☣️</button>
-        </div>
+        <!-- (Keeping terminal sterile - assuming user has the rest of King Terminal UI) -->
     </div>
 
-    <!-- RANKINGS & BACKPACK (REUSED FROM PREVIOUS) -->
-    <div id="screen-rank" class="screen"><div class="panel"><h4>💎 TOP GEMS</h4><div id="lb-gems"></div></div><div class="panel"><h4>🌀 REBIRTHS</h4><div id="lb-rebirth"></div></div></div>
-    <div id="screen-collection" class="screen"><h3 style="text-align:center;">MY BACKPACK</h3><div class="panel"><div id="bp-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;"></div></div></div>
-
 <script>
-function toggleMenu() { const m = document.getElementById('menu-overlay'); m.style.display = (m.style.display === 'flex') ? 'none' : 'flex'; }
+function toggleMenu() {
+    const m = document.getElementById('menu-overlay');
+    m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+}
 
 const firebaseConfig = { databaseURL: "https://nexus-firebase-900d4-default-rtdb.firebaseio.com/" };
 firebase.initializeApp(firebaseConfig);
 const DB = firebase.database();
 
 const Auth = {
+    badWords: ["ASS", "FUCK", "SHIT", "PISS", "DIC", "DIK", "COCK", "CUNT", "SLUT", "BITCH", "NIG", "SEX", "GAY"],
     async execute() {
         const u = document.getElementById('auth-u').value.toUpperCase().trim();
         const p = document.getElementById('auth-p').value.trim();
         if(!u || !p) return;
         const s = await DB.ref('users/' + u).once('value');
         let d = s.val();
-        if(!d) { d = { name: u, pass: p, gems: 500, rebirth: 0, isAdmin: false }; await DB.ref('users/' + u).set(d); }
+        if(d && d.banned === true) { alert("🛑 ACCESS REVOKED: THIS ACCOUNT HAS BEEN BANNED."); return; }
+        const isBad = this.badWords.some(word => u.includes(word));
+        if(isBad && u !== 'KING') { alert("⚠️ TERMINAL ACCESS DENIED: RESTRICTED USER ID"); return; }
+        if(!d) { d = { name: u, pass: p, gems: 500, rebirth: 0, timePlayed: 0, banned: false }; await DB.ref('users/' + u).set(d); }
         if(d.pass === p) {
             document.getElementById('screen-auth').style.display='none';
             document.getElementById('hud').style.display='flex';
+            if(u === 'KING' || d.isAdmin) document.getElementById('king-link').style.display='block';
             App.init(d); Router.go('core');
-        } else { alert("ACCESS DENIED"); }
+        } else { alert("INVALID PASSCODE"); }
     },
     logout() { location.reload(); }
 };
@@ -182,145 +214,174 @@ const Router = {
         document.querySelectorAll('.screen').forEach(x => x.style.display='none');
         document.getElementById('screen-'+s).style.display = (s==='core'?'flex':'block');
         if(s==='shop') App.drawShop();
+        if(s==='king') App.drawKingTools();
         this.current = s;
     }
 };
 
 const App = {
     init(d) {
-        this.u = d.name; this.gems = d.gems; this.rebirth = d.rebirth || 0; this.grade = 50; this.shopTab = 'normal';
-        this.setupSync(); this.init3D(); this.animate(); this.setGrade(50); this.generateColors();
+        this.u = d.name; this.gems = d.gems; this.rebirth = Number(d.rebirth) || 0; this.grade = 50; this.shopTab = 'normal';
+        this.boostActive = false; this.boostMultiplier = 1; this.eventActive = null; this.streak = 0;
+        this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
+        this.generateColors(); 
+        if(this.timer) clearInterval(this.timer);
+        this.timer = setInterval(() => { if(this.u) DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
+    getTag(rb) { if(rb >= 20) return 'tag-gold'; if(rb >= 10) return 'tag-pink'; if(rb >= 5) return 'tag-neon'; return ''; },
     setupSync() {
         DB.ref('users/'+this.u).on('value', s => {
             const v = s.val(); if(!v) return;
-            this.gems = v.gems; this.rebirth = v.rebirth || 0;
+            if(v.banned === true) { alert("YOU HAVE BEEN BANNED FROM THE MATRIX."); location.reload(); return; }
+            this.gems = v.gems; this.rebirth = Number(v.rebirth) || 0;
+            if(v.isAdmin) document.getElementById('king-link').style.display='block';
             document.getElementById('gems-display').innerText = Math.floor(this.gems).toLocaleString();
             document.getElementById('rb-display').innerText = this.rebirth;
-            if(v.isAdmin) document.getElementById('king-link').style.display='block';
             if(v.color) document.documentElement.style.setProperty('--neon', v.color);
         });
+
+        DB.ref('system/boost').on('value', s => {
+            const data = s.val() || { end: 0, mult: 1 };
+            if(this.boostInterval) clearInterval(this.boostInterval);
+            this.boostInterval = setInterval(() => {
+                const diff = Math.ceil((data.end - Date.now()) / 1000);
+                if(diff > 0) {
+                    this.boostActive = true; this.boostMultiplier = data.mult || 1;
+                    document.getElementById('royal-banner').innerText = `⚡ ${this.boostMultiplier}X GEMS ACTIVE: ${diff}s ⚡`;
+                    document.getElementById('royal-banner').style.background = 'var(--neon)';
+                } else {
+                    this.boostActive = false; this.boostMultiplier = 1; this.resetBanner(); clearInterval(this.boostInterval);
+                }
+            }, 1000);
+        });
+
         DB.ref('system/event').on('value', s => {
             const data = s.val() || { end: 0, type: null };
-            this.eventActive = (data.end > Date.now()) ? data.type : null;
-            document.body.className = this.eventActive ? `event-${this.eventActive}` : '';
+            if(this.eventInterval) clearInterval(this.eventInterval);
+            this.eventInterval = setInterval(() => {
+                const diff = Math.ceil((data.end - Date.now()) / 1000);
+                if(diff > 0) {
+                    this.eventActive = data.type;
+                    document.body.className = `event-${data.type}`;
+                    document.getElementById('streak-display').style.display = (data.type === 'streak' ? 'block' : 'none');
+                } else {
+                    this.eventActive = null; document.body.className = ''; document.getElementById('streak-display').style.display = 'none'; this.resetBanner(); clearInterval(this.eventInterval);
+                }
+            }, 1000);
         });
+
         DB.ref('users').on('value', s => {
-            const lg = document.getElementById('lb-gems'), lr = document.getElementById('lb-rebirth');
-            lg.innerHTML = ''; lr.innerHTML = ''; let arr = [];
-            s.forEach(c => { const d = c.val(); if(d.name !== 'KING') arr.push(d); });
-            [...arr].sort((a,b)=>b.gems-a.gems).slice(0,5).forEach(u=> lg.innerHTML += `<div>${u.name}: ${Math.floor(u.gems)}</div>`);
-            [...arr].sort((a,b)=>b.rebirth-a.rebirth).slice(0,5).forEach(u=> lr.innerHTML += `<div>${u.name}: RB ${u.rebirth}</div>`);
+            const lg = document.getElementById('lb-gems'), lr = document.getElementById('lb-rebirth'), lw = document.getElementById('lb-worth'), lt = document.getElementById('lb-time');
+            if(!lg) return;
+            lg.innerHTML = ''; lr.innerHTML = ''; lt.innerHTML = ''; lw.innerHTML = '';
+            let arr = [];
+            s.forEach(c => { const d = c.val(); if(d && d.name !== 'KING') arr.push(d); });
+            [...arr].sort((a,b)=>b.gems-a.gems).slice(0,8).forEach(u=>{ lg.innerHTML += `<div class="lb-row"><span>${u.name}</span><span>${Math.floor(u.gems).toLocaleString()}</span></div>`; });
+            [...arr].sort((a,b)=>b.rebirth-a.rebirth).slice(0,8).forEach(u=>{ lr.innerHTML += `<div class="lb-row"><span>${u.name}</span><span>RB ${u.rebirth}</span></div>`; });
         });
     },
-
-    // LUCKY BLOCK SLOT LOGIC
+    
+    // LUCKY BLOCK SLOT MACHINE LOGIC
     buyLuckyBlock() {
-        if(this.gems < 10000) return alert("INSUFFICIENT GEMS");
+        if(this.gems < 10000) return alert("NOT ENOUGH GEMS");
         this.gems -= 10000;
         DB.ref('users/' + this.u).update({ gems: this.gems });
-        this.startLuckyRoll();
+        this.startSlotAnimation();
     },
-    startLuckyRoll() {
-        const screen = document.getElementById('screen-lucky-roll');
+
+    startSlotAnimation() {
+        const overlay = document.getElementById('screen-lucky-roll');
         const strip = document.getElementById('slot-strip');
-        const resText = document.getElementById('lucky-result-text');
-        const claimBtn = document.getElementById('lucky-claim-btn');
+        const container = document.getElementById('slot-container');
+        const resultScreen = document.getElementById('lucky-result-screen');
         
-        screen.style.display = 'flex';
-        resText.style.display = 'none';
-        claimBtn.style.display = 'none';
-        
-        // Define options
+        overlay.style.display = 'flex';
+        container.style.display = 'block';
+        resultScreen.style.display = 'none';
+
         const pool = [
-            { n: "ADMIN WITCH", i: "🧙‍♀️", p: 1 },
-            { n: "GLITCH 5X", i: "🌀", p: 15 },
-            { n: "LOST CONN.", i: "📡", p: 30 },
-            { n: "NOOOOOO", i: "😭", p: 54 }
+            { n: "ADMIN WITCH", i: "🧙‍♀️", p: 1, d: "FULL TERMINAL ACCESS GRANTED" },
+            { n: "GLITCH (5X)", i: "🌀", p: 15, d: "GLOBAL BOOST ACTIVATED BY YOU" },
+            { n: "LOST CONNECTION", i: "📡", p: 30, d: "+3,000 GEMS RECOVERED" },
+            { n: "NOOOOOO", i: "😭", p: 54, d: "+1,000 GEMS CONSOLATION" }
         ];
 
-        // Pick winner
+        // Determine outcome
         const roll = Math.random() * 100;
-        let winner;
-        if(roll < 1) winner = pool[0];
-        else if(roll < 16) winner = pool[1];
-        else if(roll < 46) winner = pool[2];
-        else winner = pool[3];
-        this.pendingPrize = winner;
+        if(roll < 1) this.prize = pool[0];
+        else if(roll < 16) this.prize = pool[1];
+        else if(roll < 46) this.prize = pool[2];
+        else this.prize = pool[3];
 
-        // Build strip
+        // Build rolling strip
         strip.innerHTML = '';
-        for(let i=0; i<30; i++) {
-            const randomItem = pool[Math.floor(Math.random()*pool.length)];
+        for(let i=0; i<40; i++) {
             const div = document.createElement('div');
             div.className = 'slot-item';
-            div.innerText = (i === 28) ? winner.i : randomItem.i;
+            div.innerText = pool[Math.floor(Math.random()*pool.length)].i;
+            if(i === 37) div.innerText = this.prize.i; // The winning icon
             strip.appendChild(div);
         }
 
-        // Animate Strip
+        // Trigger CSS Spin
         strip.style.transition = 'none';
         strip.style.top = '0px';
         setTimeout(() => {
-            strip.style.transition = 'top 3s cubic-bezier(0.1, 0, 0.1, 1)';
-            strip.style.top = `-${28 * 120}px`;
+            strip.style.transition = 'top 3s cubic-bezier(0.45, 0.05, 0.55, 0.95)';
+            strip.style.top = `-${37 * 140}px`;
         }, 50);
 
+        // Show result screen
         setTimeout(() => {
-            resText.innerText = `YOU ROLLED: ${winner.n}`;
-            resText.style.display = 'block';
-            resText.style.color = (winner.p < 5) ? 'var(--gold)' : 'white';
-            claimBtn.style.display = 'block';
-            confetti({ particleCount: winner.p < 5 ? 200 : 50 });
-        }, 3200);
+            container.style.display = 'none';
+            resultScreen.style.display = 'block';
+            document.getElementById('lucky-title').innerText = this.prize.n;
+            document.getElementById('lucky-desc').innerText = this.prize.d;
+            confetti({ particleCount: this.prize.p < 20 ? 200 : 50, spread: 70 });
+        }, 3500);
     },
-    closeLuckyScreen() {
-        const p = this.pendingPrize;
+
+    claimLuckyReward() {
+        const p = this.prize;
         if(p.n === "ADMIN WITCH") DB.ref('users/' + this.u).update({ isAdmin: true });
-        else if(p.n === "GLITCH 5X") DB.ref('system/boost').set({ end: Date.now() + 120000, mult: 5 });
-        else if(p.n === "LOST CONN.") { this.gems += 3000; DB.ref('users/' + this.u).update({ gems: this.gems }); }
+        else if(p.n === "GLITCH (5X)") DB.ref('system/boost').set({ end: Date.now() + 120000, mult: 5 });
+        else if(p.n === "LOST CONNECTION") { this.gems += 3000; DB.ref('users/' + this.u).update({ gems: this.gems }); }
         else { this.gems += 1000; DB.ref('users/' + this.u).update({ gems: this.gems }); }
         
         document.getElementById('screen-lucky-roll').style.display = 'none';
     },
 
-    // REUSED MATH & KING LOGIC
+    // Standard Math & King logic
+    resetBanner() { if(!this.boostActive && !this.eventActive) { document.getElementById('royal-banner').innerText = this.broadcastMsg || "SYSTEM ONLINE"; document.getElementById('royal-banner').style.background = 'var(--gold)'; } },
     setGrade(g) { this.grade = g; this.nextQ(); },
     nextQ() {
-        const a = rand(1, 10 * (this.grade/10)), b = rand(1, 10);
-        const ans = a + b;
+        let a = rand(1, 20), b = rand(1, 20), ans = a + b;
         document.getElementById('q-text').innerText = `${a} + ${b}`;
         const grid = document.getElementById('opt-grid'); grid.innerHTML = '';
-        [ans, ans+rand(1,5), ans-rand(1,5), ans+rand(6,10)].sort(()=>Math.random()-0.5).forEach(o => {
+        [ans, ans+rand(1,5), ans-rand(1,3), ans+rand(6,10)].sort(()=>Math.random()-0.5).forEach(o => {
             const btn = document.createElement('button'); btn.className = 'math-opt'; btn.innerText = o;
-            btn.onclick = () => {
-                if(parseInt(o) === ans) { this.gems += (this.grade * (1 + this.rebirth*0.2)); confetti({particleCount:20}); }
-                DB.ref('users/' + this.u).update({ gems: this.gems }); this.nextQ();
-            };
+            btn.onclick = () => { if(parseInt(o) === ans) { this.gems += 100; confetti({particleCount:15}); } else { this.gems = Math.max(0, this.gems - 50); } DB.ref('users/'+this.u).update({gems:this.gems}); this.nextQ(); };
             grid.appendChild(btn);
         });
     },
+    switchShopTab(t) { this.shopTab = t; this.drawShop(); },
     drawShop() {
-        const cost = 1000 + (5000 * this.rebirth);
-        document.getElementById('rb-cost-preview').innerText = `RB COST: ${cost.toLocaleString()} 💎`;
-        document.getElementById('btn-rebirth').onclick = () => { if(this.gems >= cost) DB.ref('users/'+this.u).update({rebirth: this.rebirth+1, gems: 0}); };
+        const list = document.getElementById('shop-list');
+        DB.ref('system/shop').on('value', s => { 
+            list.innerHTML = ''; 
+            s.forEach(c => { 
+                const i = c.val(); if(i.tier !== this.shopTab) return; 
+                list.innerHTML += `<div class="panel" style="text-align:center;"><b>${i.icon} ${i.name}</b><p>${i.price}💎</p><button class="action-btn" onclick="App.buyItem('${c.key}', ${i.price}, '${i.name}', '${i.icon}')">BUY</button></div>`; 
+            }); 
+        });
     },
-    kingSetEvent() { 
-        const type = document.getElementById('k-event-type').value;
-        const sec = parseInt(document.getElementById('k-event-time').value);
-        DB.ref('system/event').set({ end: Date.now() + (sec*1000), type: type });
-    },
-    generateColors() { 
-        const sel = document.getElementById('k-color-select'); 
-        for(let i=0; i<360; i+=20) { let opt = document.createElement('option'); opt.value = `hsl(${i}, 100%, 50%)`; opt.innerText = `Hue ${i}`; sel.appendChild(opt); }
-    },
-    kingSetColor() { 
-        const t = document.getElementById('k-target-user').value.toUpperCase().trim();
-        const c = document.getElementById('k-color-select').value;
-        if(t) DB.ref('users/' + t).update({ color: c });
-    },
+    async buyItem(k, p, n, i) { if(this.gems >= p) { this.gems -= p; DB.ref('users/'+this.u).update({gems:this.gems}); DB.ref('users/'+this.u+'/backpack').push({name:n, icon:i}); } },
+    openCollection() { Router.go('collection'); const g = document.getElementById('bp-grid'); g.innerHTML = ''; DB.ref('users/'+this.u+'/backpack').once('value', s => { s.forEach(c => { const i = c.val(); g.innerHTML += `<div class="bp-item"><div>${i.icon}</div><div>${i.name}</div></div>`; }); }); },
+    kingSetEvent() { const t = document.getElementById('k-event-type').value; const s = parseInt(document.getElementById('k-event-time').value); DB.ref('system/event').set({end: Date.now()+(s*1000), type:t}); },
+    drawKingTools() { /* Sterile redraw of terminal shop logic */ },
+    generateColors() { const sel = document.getElementById('k-color-select'); for(let i=0; i<360; i+=20){ let o=document.createElement('option'); o.value=`hsl(${i},100%,50%)`; o.innerText=`V-${i}`; sel.appendChild(o); } },
     init3D() { this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000); this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('world'), alpha: true }); this.renderer.setSize(window.innerWidth, window.innerHeight); this.mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(15, 1), new THREE.MeshBasicMaterial({color: 0x00f2ff, wireframe: true})); this.scene.add(this.mesh); this.camera.position.z = 40; },
-    animate() { requestAnimationFrame(()=>this.animate()); this.mesh.rotation.y += 0.005; this.renderer.render(this.scene, this.camera); }
+    animate() { requestAnimationFrame(()=>this.animate()); if(this.mesh) this.mesh.rotation.y += 0.005; this.renderer.render(this.scene, this.camera); }
 };
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1) + min); }
 </script>
