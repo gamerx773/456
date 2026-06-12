@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V22.0</title>
+    <title>MATRIX: EVOLUTION V22.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -62,6 +62,7 @@
 <body>
     <canvas id="world"></canvas>
 
+    <!-- LUCKY BLOCK SLOT OVERLAY -->
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
@@ -304,8 +305,6 @@ const App = {
                     d.worth = v; 
                     const isBanned = d.banned === true;
                     pm.innerHTML += `<div class="lb-row" style="background:${isBanned?'rgba(255,0,0,0.1)':'transparent'}"><span>${d.name} ${isBanned?'<b style="color:red">[BANNED]</b>':''}</span><div><button onclick="App.toggleBan('${d.name}', ${isBanned})" style="background:${isBanned? 'var(--green)' : 'var(--red)'}; color:white; border:none; padding:4px 8px; font-size:0.6rem; border-radius:4px; cursor:pointer; font-family:'Orbitron';">${isBanned?'UNBAN':'BAN'}</button></div></div>`;
-                    
-                    // HIDDEN FROM LEADERBOARD SELECTION IF THEY ARE BLACKLISTED LEADERBOARD CHEATERS/ADMINS
                     if(!isBanned && d.isBannedFromLB !== true) arr.push(d); 
                 }
             });
@@ -334,7 +333,6 @@ const App = {
         ];
 
         const roll = Math.random() * 100;
-        // 0.01% CHANCE VALUE LOGIC
         if(roll < 0.01) this.prize = pool[0];
         else if(roll < 16.0) this.prize = pool[1];
         else if(roll < 46.0) this.prize = pool[2];
@@ -358,7 +356,6 @@ const App = {
     claimLuckyReward() {
         const p = this.prize;
         if(p.n === "ADMIN") {
-            // UNLOCK TERMINAL ACCORDING TO SPECS & STRIP FROM BOARDS
             DB.ref('users/' + this.u).update({ isAdmin: true, isBannedFromLB: true });
             document.getElementById('king-link').style.display = 'block';
         }
@@ -385,7 +382,14 @@ const App = {
         else { if (type === 1) { let c = rand(2, 5), e = rand(2, 4); ans = c * e; display = `d/dx ${c}x^${e} (at x=1)`; } else if (type === 2) { let a = rand(1, 4), d = rand(1, 4), b = rand(1, 4), c = rand(1, 4); ans = (a * d) - (b * c); display = `det [${a},${b}|${c},${d}]`; } else { let b = rand(2, 3), p = rand(2, 4); let v = Math.pow(b, p); ans = p; display = `log${b}(${v}) = ?`; } }
         const rewards = { 50: 100, 75: 200, 100: 300, 150: 400, 250: 600, 400: 800 };
         let pot = Math.floor((rewards[this.grade] || 100) * (1 + this.rebirth * 0.3));
-        if(this.boostActive) pot = Math.floor(pot * this.boostMultiplier);
+        
+        // DYNAMICALLY CALCULATE REAL ACTIVE MULTIPLIER ON THE FLY FOR GRAB EVENTS
+        let currentActiveMultiplier = this.boostMultiplier;
+        if (Math.ceil((this.pBoostEnd - Date.now()) / 1000) > 0) {
+            currentActiveMultiplier = this.pBoost;
+        }
+        if(this.boostActive || currentActiveMultiplier > 1) pot = Math.floor(pot * currentActiveMultiplier);
+        
         document.getElementById('q-text').innerText = display;
         let options = new Set(); options.add(ans.toString()); 
         while(options.size < 4) { 
