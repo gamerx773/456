@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V22.1</title>
+    <title>MATRIX: EVOLUTION V22.2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -62,7 +62,6 @@
 <body>
     <canvas id="world"></canvas>
 
-    <!-- LUCKY BLOCK SLOT OVERLAY -->
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
@@ -248,6 +247,7 @@ const App = {
         this.u = d.name; this.gems = d.gems; this.rebirth = Number(d.rebirth) || 0; this.grade = 50; this.shopTab = 'normal';
         this.boostActive = false; this.boostMultiplier = 1;
         this.pBoost = 1; this.pBoostEnd = 0;
+        this.lastQInfo = null; // HOLDS ACTIVE QUESTION META TO PASS HINTS TO THE USERS
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
         setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
@@ -365,6 +365,40 @@ const App = {
         document.getElementById('screen-lucky-roll').style.display = 'none';
     },
 
+    // NEW EDUCATIONAL PROMPTING SYSTEM FOR TEACHER APPROVAL
+    getMathHint(info) {
+        if(!info) return "Check your calculations carefully!";
+        const { grade, type, a, b } = info;
+        
+        if (grade === 50) {
+            if (type === 1) return `💡 EDUCATIONAL HINT:\nWhen adding ${a} + ${b}, count up from ${a} by ${b} spaces. If the column sum goes over 9, remember to carry the 1 to the tens place!`;
+            return `💡 EDUCATIONAL HINT:\nFor ${a} - ${b}, think of what number you need to add to ${b} to match up to ${a}. If the top number is too small, you must borrow!`;
+        }
+        if (grade === 75) {
+            if (type === 2) return `💡 EDUCATIONAL HINT:\nMultiplication (${a} × ${b}) means adding groups! Try adding ${a} to itself ${b} times, or think of it as a grid of blocks.`;
+            return `💡 EDUCATIONAL HINT:\nDouble check your columns! Stack your numbers vertically, line up the place values, and don't forget to regroup columns.`;
+        }
+        if (grade === 100) {
+            if (type === 2) return `💡 EDUCATIONAL HINT:\nDivision (${a} ÷ ${b}) asks: how many times does ${b} fit entirely inside ${a}? Work backward using multiplication!`;
+            if (type === 3) return `💡 EDUCATIONAL HINT:\nWhen adding decimals (${a} + ${b}), remember the absolute rule: ALWAYS line up your decimal points vertically before adding!`;
+        }
+        if (grade === 150) {
+            if (type === 1) return `💡 EDUCATIONAL HINT:\nAdding a positive to a negative number is like moving right on a number line. Start at ${a} and jump forward ${b}.`;
+            if (type === 2) return `💡 EDUCATIONAL HINT:\nTo solve an equation like ${a}x = ${b}, perform the inverse operation! Divide both sides by ${a} to isolate the x variable.`;
+            if (type === 3) return `💡 EDUCATIONAL HINT:\nTo find a percentage, turn it into a fraction or decimal first. Remember: ${a}% means ${a} out of 100 (${a/100}).`;
+        }
+        if (grade === 250) {
+            if (type === 2) return `💡 EDUCATIONAL HINT:\nA square root (√) is looking for the hidden pair. What number multiplied by itself equals the value inside?`;
+            if (type === 3) return `💡 EDUCATIONAL HINT:\nAn exponent (${a}^${b}) means multiplying the base number (${a}) by itself over and over. You do it ${b} times!`;
+        }
+        if (grade === 400) {
+            if (type === 1) return `💡 EDUCATIONAL HINT:\nPower Rule reminder: d/dx (cx^e) = (c * e) * x^(e - 1). Bring the exponent down to multiply, then subtract 1 from the power!`;
+            if (type === 2) return `💡 EDUCATIONAL HINT:\nTo calculate the determinant of a 2x2 matrix [a, b | c, d], execute the cross formula multiplication: (a * d) - (b * c).`;
+            if (type === 3) return `💡 EDUCATIONAL HINT:\nLogarithms are exponents in disguise! log_b(v) = ? is simply asking: 'What power do I raise ${b} to in order to get ${b**b}?'`;
+        }
+        return "Double check your operations step-by-step!";
+    },
+
     toggleBan(u, isBanned) { if(confirm(`ARE YOU SURE YOU WANT TO CHANGE ACCESS STATUS FOR: ${u}?`)) { DB.ref('users/' + u).update({ banned: !isBanned }); } },
     omegaWipe() { if(confirm("⚠️ CRITICAL WARNING: THIS WILL RESET ALL PLAYERS. ARE YOU ABSOLUTELY SURE?")) { DB.ref('users').once('value', s => { s.forEach(c => { const userId = c.key; if(userId !== 'KING') { DB.ref('users/' + userId).update({ gems: 500, rebirth: 0, timePlayed: 0, backpack: null, banned: false, isAdmin: false, isBannedFromLB: false }); } }); alert("SYSTEM RESET COMPLETE."); }); } },
     kingSetBoost() { const rawMult = document.getElementById('k-boost-mult').value.toLowerCase().replace('x', ''); let mult = parseInt(rawMult); const sec = parseInt(document.getElementById('k-boost-time').value); if(isNaN(mult) || mult < 1) mult = 1; if(mult > 10) mult = 10; if(!isNaN(sec) && sec > 0) { DB.ref('system/boost').set({ end: Date.now() + (sec * 1000), mult: mult }); alert(`${mult}X BOOST ACTIVATED FOR ${sec}s`); } },
@@ -374,19 +408,48 @@ const App = {
     setGrade(g) { this.grade = g; document.querySelectorAll('.grade-pill').forEach(p => p.classList.remove('active')); document.getElementById('gp-'+g).classList.add('active'); this.nextQ(); },
     nextQ() {
         let ans, display; const type = rand(1, 3);
-        if (this.grade === 50) { let a = rand(1, 15), b = rand(1, 10); if (type === 1) { ans = a + b; display = `${a} + ${b}`; } else { a = Math.max(a, b); b = Math.min(a, b); ans = a - b; display = `${a} - ${b}`; } }
-        else if (this.grade === 75) { if (type === 1) { let a = rand(50, 200), b = rand(20, 150); ans = a + b; display = `${a} + ${b}`; } else if (type === 2) { let a = rand(2, 9), b = rand(2, 5); ans = a * b; display = `${a} × ${b}`; } else { let a = rand(100, 300), b = rand(10, 99); ans = a - b; display = `${a} - ${b}`; } }
-        else if (this.grade === 100) { if (type === 1) { let a = rand(12, 35), b = rand(11, 25); ans = a * b; display = `${a} × ${b}`; } else if (type === 2) { let b = rand(6, 12), ans_v = rand(12, 40); let a = b * ans_v; ans = ans_v; display = `${a} ÷ ${b}`; } else { let a = (rand(10, 50)/10); let b = (rand(10, 50)/10); ans = parseFloat((a + b).toFixed(1)); display = `${a.toFixed(1)} + ${b.toFixed(1)}`; } }
-        else if (this.grade === 150) { if (type === 1) { let a = rand(-20, -1), b = rand(5, 25); ans = a + b; display = `(${a}) + ${b}`; } else if (type === 2) { let x = rand(5, 15), c = rand(2, 8), b = x * c; ans = x; display = `${c}x = ${b}`; } else { let p = [10, 20, 25, 50][rand(0,3)], val = rand(1, 10) * 20; ans = (p/100)*val; display = `${p}% of ${val}`; } }
-        else if (this.grade === 250) { if (type === 1) { let x = rand(2, 8), a = rand(2, 5), b = rand(5, 20), res = a*x + b; ans = x; display = `${a}x + ${b} = ${res}`; } else if (type === 2) { let a = rand(4, 15); ans = a; display = `√${a*a} = ?`; } else { let a = rand(2, 5), b = rand(2, 4); ans = Math.pow(a, b); display = `${a}^${b}`; } }
-        else { if (type === 1) { let c = rand(2, 5), e = rand(2, 4); ans = c * e; display = `d/dx ${c}x^${e} (at x=1)`; } else if (type === 2) { let a = rand(1, 4), d = rand(1, 4), b = rand(1, 4), c = rand(1, 4); ans = (a * d) - (b * c); display = `det [${a},${b}|${c},${d}]`; } else { let b = rand(2, 3), p = rand(2, 4); let v = Math.pow(b, p); ans = p; display = `log${b}(${v}) = ?`; } }
+        let currentA = 0, currentB = 0; // LOCAL CAPTURE DATA FOR THE HINTS OVERLAY LOOP
+
+        if (this.grade === 50) { 
+            currentA = rand(1, 15); currentB = rand(1, 10); 
+            if (type === 1) { ans = currentA + currentB; display = `${currentA} + ${currentB}`; } 
+            else { currentA = Math.max(currentA, currentB); currentB = Math.min(currentA, currentB); ans = currentA - currentB; display = `${currentA} - ${currentB}`; } 
+        }
+        else if (this.grade === 75) { 
+            if (type === 1) { currentA = rand(50, 200); currentB = rand(20, 150); ans = currentA + currentB; display = `${currentA} + ${currentB}`; } 
+            else if (type === 2) { currentA = rand(2, 9); currentB = rand(2, 5); ans = currentA * currentB; display = `${currentA} × ${currentB}`; } 
+            else { currentA = rand(100, 300); currentB = rand(10, 99); ans = currentA - currentB; display = `${currentA} - ${currentB}`; } 
+        }
+        else if (this.grade === 100) { 
+            if (type === 1) { currentA = rand(12, 35); currentB = rand(11, 25); ans = currentA * currentB; display = `${currentA} × ${currentB}`; } 
+            else if (type === 2) { currentB = rand(6, 12); let ans_v = rand(12, 40); currentA = currentB * ans_v; ans = ans_v; display = `${currentA} ÷ ${currentB}`; } 
+            else { currentA = (rand(10, 50)/10); currentB = (rand(10, 50)/10); ans = parseFloat((currentA + currentB).toFixed(1)); display = `${currentA.toFixed(1)} + ${currentB.toFixed(1)}`; } 
+        }
+        else if (this.grade === 150) { 
+            if (type === 1) { currentA = rand(-20, -1); currentB = rand(5, 25); ans = currentA + currentB; display = `(${currentA}) + ${hud = currentB}`; } 
+            else if (type === 2) { let x = rand(5, 15); currentA = rand(2, 8); currentB = x * currentA; ans = x; display = `${currentA}x = ${currentB}`; } 
+            else { currentA = [10, 20, 25, 50][rand(0,3)]; currentB = rand(1, 10) * 20; ans = (currentA/100)*currentB; display = `${currentA}% of ${currentB}`; } 
+        }
+        else if (this.grade === 250) { 
+            if (type === 1) { let x = rand(2, 8); currentA = rand(2, 5); currentB = rand(5, 20); let res = currentA*x + currentB; ans = x; display = `${currentA}x + ${currentB} = ${res}`; } 
+            else if (type === 2) { currentA = rand(4, 15); ans = currentA; display = `√${currentA*currentA} = ?`; } 
+            else { currentA = rand(2, 5); currentB = rand(2, 4); ans = Math.pow(currentA, currentB); display = `${currentA}^${currentB}`; } 
+        }
+        else { 
+            if (type === 1) { currentA = rand(2, 5); currentB = rand(2, 4); ans = currentA * currentB; display = `d/dx ${currentA}x^${currentB} (at x=1)`; } 
+            else if (type === 2) { currentA = rand(1, 4); currentB = rand(1, 4); ans = (currentA * currentA) - (currentB * currentB); display = `det [${currentA},${currentB}|${currentB},${currentA}]`; } 
+            else { currentB = rand(2, 3); currentA = rand(2, 4); let v = Math.pow(currentB, currentA); ans = currentA; display = `log${currentB}(${v}) = ?`; } 
+        }
+
+        // STORE ALL RELEVANT STATE INFORMATION PRIOR TO RUNNING RENDER LOOPS
+        this.lastQInfo = { grade: this.grade, type: type, a: currentA, b: currentB, display: display, ans: ans };
+
         const rewards = { 50: 100, 75: 200, 100: 300, 150: 400, 250: 600, 400: 800 };
         let pot = Math.floor((rewards[this.grade] || 100) * (1 + this.rebirth * 0.3));
         
-        // DYNAMICALLY CALCULATE REAL ACTIVE MULTIPLIER ON THE FLY FOR GRAB EVENTS
         let currentActiveMultiplier = this.boostMultiplier;
         if (Math.ceil((this.pBoostEnd - Date.now()) / 1000) > 0) {
-            currentActiveMultiplier = this.pBoost;
+            currentActiveMultiplier = 5;
         }
         if(this.boostActive || currentActiveMultiplier > 1) pot = Math.floor(pot * currentActiveMultiplier);
         
@@ -400,7 +463,21 @@ const App = {
         const grid = document.getElementById('opt-grid'); grid.innerHTML = '';
         Array.from(options).sort(() => Math.random() - 0.5).forEach(o => {
             const btn = document.createElement('button'); btn.className = 'math-opt'; btn.innerText = o;
-            btn.onclick = () => { if (Math.abs(parseFloat(o) - parseFloat(ans)) < 0.01) { this.gems += pot; confetti({ particleCount: 30 }); } else { this.gems = Math.max(0, this.gems - Math.floor(pot/2)); } DB.ref('users/' + this.u).update({ gems: this.gems }); this.nextQ(); }; grid.appendChild(btn);
+            btn.onclick = () => { 
+                if (Math.abs(parseFloat(o) - parseFloat(ans)) < 0.01) { 
+                    this.gems += pot; 
+                    confetti({ particleCount: 30 }); 
+                    DB.ref('users/' + this.u).update({ gems: this.gems }); 
+                    this.nextQ();
+                } else { 
+                    this.gems = Math.max(0, this.gems - Math.floor(pot/2)); 
+                    DB.ref('users/' + this.u).update({ gems: this.gems }); 
+                    // EDUCATION HINT TRIGGER: STOPS MATRIX RUN, FIRES ADVICE WINDOW FOR CHILDREN
+                    alert(this.getMathHint(this.lastQInfo));
+                    this.nextQ();
+                } 
+            }; 
+            grid.appendChild(btn);
         });
     },
     switchShopTab(t) { if(t === 'crown' && this.rebirth < 5) { alert("RB 5+ REQ"); return; } this.shopTab = t; this.drawShop(); },
