@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V22.3</title>
+    <title>MATRIX: EVOLUTION V23.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono&display=swap');
-        :root { --neon: #00f2ff; --pink: #ff007a; --gold: #f1c40f; --bg: #000; --glass: rgba(15, 15, 30, 0.96); --red: #ff3e3e; --green: #2ecc71; }
+        :root { --neon: #00f2ff; --pink: #ff007a; --gold: #f1c40f; --bg: #000; --glass: rgba(15, 15, 30, 0.96); --red: #ff3e3e; --green: #2ecc71; --orange: #ff9f43; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: white; font-family: 'JetBrains Mono', monospace; }
         canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
@@ -32,6 +32,11 @@
         /* SCREENS */
         .screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; padding: 110px 15px 20px 15px; overflow-y: auto; background: rgba(0,0,0,0.93); backdrop-filter: blur(10px); }
         .panel { background: var(--glass); border-radius: 12px; padding: 15px; border: 1px solid rgba(0, 242, 255, 0.2); margin-bottom: 12px; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+        /* STREAK & MATRIX UI ALERTS */
+        #streak-ticker { font-family: 'Orbitron'; font-size: 0.75rem; color: #fff; font-weight: 900; text-align: center; margin-bottom: 8px; letter-spacing: 1px; display: none; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .streak-fire { color: var(--orange) !important; text-shadow: 0 0 15px var(--orange) !important; animation: flicker 0.5s infinite alternate; }
+        @keyframes flicker { from { transform: scale(1); } to { transform: scale(1.03); } }
 
         /* MATH UI */
         .grade-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
@@ -62,6 +67,7 @@
 <body>
     <canvas id="world"></canvas>
 
+    <!-- LUCKY BLOCK SLOT OVERLAY -->
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
@@ -106,6 +112,11 @@
     </div>
 
     <div id="screen-core" class="screen">
+        <!-- DAILY ATTENDANCE BANNER PANEL -->
+        <div id="daily-reward-banner" class="panel" style="display:none; text-align:center; border:2px solid var(--gold); background:rgba(241,196,15,0.08); padding:10px; margin-bottom:10px;">
+            <span id="daily-reward-text" style="font-family:'Orbitron'; font-size:0.7rem; color:var(--gold); font-weight:900;"></span>
+        </div>
+
         <div class="grade-grid">
             <div id="gp-50" class="grade-pill" onclick="App.setGrade(50)">K-1</div>
             <div id="gp-75" class="grade-pill" onclick="App.setGrade(75)">2-3</div>
@@ -114,6 +125,10 @@
             <div id="gp-250" class="grade-pill" onclick="App.setGrade(250)">8-12</div>
             <div id="gp-400" class="grade-pill" onclick="App.setGrade(400)">ADULT</div>
         </div>
+
+        <!-- STREAK TRACKER UI FIELD -->
+        <div id="streak-ticker">STREAK: 0</div>
+
         <div id="q-text">...</div>
         <div id="opt-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
     </div>
@@ -181,7 +196,7 @@
         <div class="panel" style="border-color:var(--green)">
             <input type="text" id="k-dest" class="input-field" placeholder="USER ID">
             <input type="number" id="k-amt" class="input-field" placeholder="GEM AMOUNT">
-            <button class="action-btn" style="background:var(--green); color:black;" onclick="App.dispatchGems()">DISPATCH GEMS</button>
+            <button class="action-btn" style="background:var(--green); color:black;" onclick="App.dispatchGEMS()">DISPATCH GEMS</button>
         </div>
         <div class="panel" style="border-color:var(--red); text-align: center;">
             <h4 style="color:var(--red); margin-top:0;">☣️ SYSTEM RESET ☣️</h4>
@@ -248,12 +263,65 @@ const App = {
         this.boostActive = false; this.boostMultiplier = 1;
         this.pBoost = 1; this.pBoostEnd = 0;
         this.lastQInfo = null; 
-        this.wrongStreak = 0; // ROTATES UNIQUE HINTS SO STUDENTS NEVER OBSERVE DUPLICATES
+        this.wrongStreak = 0; 
+        this.correctStreak = 0; // TRACKS STRINGS OF SUCCESSFUL MATH SOLUTIONS FOR MULTIPLIER ACCURACY
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
+        this.checkDailyReward(); // PROCESS CONSECUTIVE LOGINS AT SYSTEM BOOT
         setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
     getTag(rb) { if(rb >= 20) return 'tag-gold'; if(rb >= 10) return 'tag-pink'; if(rb >= 5) return 'tag-neon'; return ''; },
+    
+    // NEW CONSECUTIVE DAILY TRACKER SYSTEM
+    async checkDailyReward() {
+        if(this.u === 'KING') return;
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+        
+        const snap = await DB.ref(`users/${this.u}/dailyTracker`).once('value');
+        let tracker = snap.val() || { lastLoginDate: "", currentStreak: 0 };
+        
+        if (tracker.lastLoginDate === todayStr) {
+            // Already checked in today, gracefully skip reward prompt
+            return;
+        }
+
+        let newStreak = 1;
+        if (tracker.lastLoginDate) {
+            const lastDate = new Date(tracker.lastLoginDate);
+            const todayDate = new Date(todayStr);
+            const diffTime = Math.abs(todayDate - lastDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 1) {
+                // Consecutive attendance locked! Increment day counts
+                newStreak = (tracker.currentStreak || 0) + 1;
+            } else {
+                // Day missed. Reset system streak metrics back to day 1
+                newStreak = 1;
+            }
+        }
+
+        const payoutGems = newStreak * 500;
+        this.gems += payoutGems;
+        
+        // Update database payload immediately
+        await DB.ref(`users/${this.u}`).update({
+            gems: this.gems,
+            dailyTracker: { lastLoginDate: todayStr, currentStreak: newStreak }
+        });
+
+        // Flash educational announcement ribbon on matrix workspace
+        const banner = document.getElementById('daily-reward-banner');
+        const bannerTxt = document.getElementById('daily-reward-text');
+        if (banner && bannerTxt) {
+            bannerTxt.innerText = `📅 CONSECUTIVE LOGIN BONUS (DAY ${newStreak}): +${payoutGems.toLocaleString()} 💎 INJECTED!`;
+            banner.style.display = 'block';
+            confetti({ particleCount: 40, spread: 60 });
+            setTimeout(() => { banner.style.display = 'none'; }, 7000);
+        }
+    },
+
     setupSync() {
         DB.ref('users/'+this.u).on('value', s => {
             const v = s.val(); if(!v) return;
@@ -370,8 +438,6 @@ const App = {
     getMathHint(info) {
         if(!info) return "Check your calculations carefully!";
         const { grade, type, a, b } = info;
-        
-        // Pick hint version based on mistake history index (streak tracker flips choices)
         const alternateIndex = this.wrongStreak % 2;
 
         const hintsPool = {
@@ -446,14 +512,12 @@ const App = {
         };
 
         const key = `${grade}-${type}`;
-        if (hintsPool[key]) {
-            return hintsPool[key][alternateIndex];
-        }
+        if (hintsPool[key]) return hintsPool[key][alternateIndex];
         return "Double check your operations step-by-step!";
     },
 
     toggleBan(u, isBanned) { if(confirm(`ARE YOU SURE YOU WANT TO CHANGE ACCESS STATUS FOR: ${u}?`)) { DB.ref('users/' + u).update({ banned: !isBanned }); } },
-    omegaWipe() { if(confirm("⚠️ CRITICAL WARNING: THIS WILL RESET ALL PLAYERS. ARE YOU ABSOLUTELY SURE?")) { DB.ref('users').once('value', s => { s.forEach(c => { const userId = c.key; if(userId !== 'KING') { DB.ref('users/' + userId).update({ gems: 500, rebirth: 0, timePlayed: 0, backpack: null, banned: false, isAdmin: false, isBannedFromLB: false }); } }); alert("SYSTEM RESET COMPLETE."); }); } },
+    omegaWipe() { if(confirm("⚠️ CRITICAL WARNING: THIS WILL RESET ALL PLAYERS. ARE YOU ABSOLUTELY SURE?")) { DB.ref('users').once('value', s => { s.forEach(c => { const userId = c.key; if(userId !== 'KING') { DB.ref('users/' + userId).update({ gems: 500, rebirth: 0, timePlayed: 0, backpack: null, banned: false, isAdmin: false, isBannedFromLB: false, dailyTracker: null }); } }); alert("SYSTEM RESET COMPLETE."); }); } },
     kingSetBoost() { const rawMult = document.getElementById('k-boost-mult').value.toLowerCase().replace('x', ''); let mult = parseInt(rawMult); const sec = parseInt(document.getElementById('k-boost-time').value); if(isNaN(mult) || mult < 1) mult = 1; if(mult > 10) mult = 10; if(!isNaN(sec) && sec > 0) { DB.ref('system/boost').set({ end: Date.now() + (sec * 1000), mult: mult }); alert(`${mult}X BOOST ACTIVATED FOR ${sec}s`); } },
     generateColors() { const sel = document.getElementById('k-color-select'); if(!sel) return; for(let i=0; i<360; i+=8) { let hue = `hsl(${i}, 100%, 60%)`; let opt = document.createElement('option'); opt.value = hue; opt.innerText = `SPECTRUM V-${i}`; opt.style.color = hue; sel.appendChild(opt); } },
     kingSetColor() { const target = document.getElementById('k-target-user').value.toUpperCase().trim(); const color = document.getElementById('k-color-select').value; if(target) DB.ref('users/' + target).update({ color: color }).then(() => alert("IDENTITY OVERRIDE SUCCESSFUL")); },
@@ -499,12 +563,36 @@ const App = {
         const rewards = { 50: 100, 75: 200, 100: 300, 150: 400, 250: 600, 400: 800 };
         let pot = Math.floor((rewards[this.grade] || 100) * (1 + this.rebirth * 0.3));
         
+        // EVALUATE CURRENT STREAK MODIFIER BEFORE GLOBAL CALCS
+        let streakMultiplier = 1.0;
+        const ticker = document.getElementById('streak-ticker');
+        if (this.correctStreak > 0) {
+            ticker.style.display = 'block';
+            ticker.innerText = `STREAK: ${this.correctStreak}`;
+            if (this.correctStreak >= 5) {
+                ticker.className = 'streak-fire';
+                ticker.innerText = `🔥 STREAK: ${this.correctStreak} (1.5x MULTIPLIER) 🔥`;
+                streakMultiplier = 1.5;
+            } else if (this.correctStreak >= 3) {
+                ticker.className = '';
+                ticker.innerText = `⚡ STREAK: ${this.correctStreak} (1.2x MULTIPLIER) ⚡`;
+                streakMultiplier = 1.2;
+            } else {
+                ticker.className = '';
+            }
+        } else {
+            ticker.style.display = 'none';
+        }
+
         let currentActiveMultiplier = this.boostMultiplier;
         if (Math.ceil((this.pBoostEnd - Date.now()) / 1000) > 0) {
             currentActiveMultiplier = 5;
         }
         if(this.boostActive || currentActiveMultiplier > 1) pot = Math.floor(pot * currentActiveMultiplier);
         
+        // APPLY STREAK ENGINE VALUE ON TOP OF POT REWARDS
+        pot = Math.floor(pot * streakMultiplier);
+
         document.getElementById('q-text').innerText = display;
         let options = new Set(); options.add(ans.toString()); 
         while(options.size < 4) { 
@@ -518,13 +606,15 @@ const App = {
             btn.onclick = () => { 
                 if (Math.abs(parseFloat(o) - parseFloat(ans)) < 0.01) { 
                     this.gems += pot; 
-                    this.wrongStreak = 0; // RESET ACCURACY METRIC ON CORRECT OPTION
+                    this.wrongStreak = 0; 
+                    this.correctStreak += 1; // ACCUMULATE SUCCESSFUL STEPS FOR STREAK BOOSTS
                     confetti({ particleCount: 30 }); 
                     DB.ref('users/' + this.u).update({ gems: this.gems }); 
                     this.nextQ();
                 } else { 
                     this.gems = Math.max(0, this.gems - Math.floor(pot/2)); 
-                    this.wrongStreak += 1; // INCREMENT INCORRECT STATUS TO TRIGGER THE ALTERNATE SUB-HINTS
+                    this.wrongStreak += 1; 
+                    this.correctStreak = 0; // RESET REWARDS STREAK ON INACCURATE GUESS
                     DB.ref('users/' + this.u).update({ gems: this.gems }); 
                     alert(this.getMathHint(this.lastQInfo));
                     this.nextQ();
@@ -548,7 +638,7 @@ const App = {
     deleteShopItem(k) { if(confirm("DELETE THIS ITEM?")) DB.ref('system/shop/'+k).remove(); },
     forgeItem() { const n=document.getElementById('m-name').value, i=document.getElementById('m-icon').value, p=parseInt(document.getElementById('m-price').value), t=document.getElementById('m-tier').value, s=parseInt(document.getElementById('m-stock').value); if(n && i && !isNaN(p)) { DB.ref('system/shop').push({name:n, icon:i, price:p, stock:s||10, tier:t}); alert("FORGED"); } },
     sendBroadcast() { const m = document.getElementById('k-msg').value.toUpperCase(); if(m) DB.ref('system/broadcast').set("👑 KING: " + m); },
-    dispatchGems() { const t = document.getElementById('k-dest').value.toUpperCase().trim(); const a = parseInt(document.getElementById('k-amt').value); if(t && !isNaN(a)) { DB.ref('users/'+t+'/gems').transaction(g => (g || 0) + a); alert("DISPATCHED"); } },
+    dispatchGEMS() { const t = document.getElementById('k-dest').value.toUpperCase().trim(); const a = parseInt(document.getElementById('k-amt').value); if(t && !isNaN(a)) { DB.ref('users/'+t+'/gems').transaction(g => (g || 0) + a); alert("DISPATCHED"); } },
     collectTax() { DB.ref('users').once('value', s => { let total = 0; s.forEach(c => { const d = c.val(); if(d.name !== 'KING' && d.gems > 50) { const tx = Math.floor(d.gems * 0.05); DB.ref('users/'+c.key+'/gems').transaction(g => g - tx); total += tx; }}); DB.ref('users/KING/gems').transaction(g => (g || 0) + total); alert("TAXED: " + total); }); },
     init3D() { this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000); this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('world'), alpha: true }); this.renderer.setSize(window.innerWidth, window.innerHeight); this.mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(15, 1), new THREE.MeshBasicMaterial({color: 0x00f2ff, wireframe: true})); this.scene.add(this.mesh); this.camera.position.z = 40; },
     animate() { requestAnimationFrame(()=>this.animate()); if(this.mesh) { this.mesh.rotation.y += 0.005; } this.renderer.render(this.scene, this.camera); }
