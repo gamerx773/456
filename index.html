@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V23.0</title>
+    <title>MATRIX: EVOLUTION V23.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -22,6 +22,9 @@
         .slot-item { height: 140px; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; }
         #lucky-result-screen { text-align: center; display: none; animation: zoomIn 0.5s ease; }
         @keyframes zoomIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* NEW DEDICATED DAILY LOGIN REWARD POPUP SCREEN */
+        #screen-daily-claim { position: fixed; inset: 0; z-index: 8500; background: rgba(0,0,0,0.96); display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(25px); }
 
         /* HUD */
         #hud { position: fixed; top: 0; left: 0; right: 0; z-index: 2000; display: none; flex-direction: column; padding: 8px; background: rgba(0,0,0,0.9); border-bottom: 1px solid rgba(0,242,255,0.2); }
@@ -81,6 +84,18 @@
             <button class="action-btn" style="background:var(--gold); color:black; width:220px;" onclick="App.claimLuckyReward()">INJECT DATA</button>
         </div>
     </div>
+
+    <!-- NEW DAILY REWARD OVERLAY SCREEN POPUP -->
+    <div id="screen-daily-claim">
+        <div class="panel" style="width:85%; text-align:center; border:2px solid var(--gold); background:var(--glass);">
+            <h1 style="font-family:'Orbitron'; color:var(--gold); font-size:1.8rem; margin-bottom:5px;">DAILY MATRIX SYNC</h1>
+            <p style="font-size:0.8rem; color:#888; margin-bottom:20px;">CONSECUTIVE ATTENDANCE VERIFIED</p>
+            <h2 id="popup-streak-title" style="font-family:'Orbitron'; color:white; font-size:1.4rem; margin-bottom:10px;">DAY ---</h2>
+            <div style="font-size:3rem; margin:15px 0;">📅</div>
+            <p id="popup-reward-desc" style="font-family:'Orbitron'; font-size:1.1rem; color:var(--neon); margin-bottom:25px;">+--- GEMS PENDING</p>
+            <button class="action-btn" style="background:var(--gold); color:black;" onclick="App.claimDailyGems()">CLAIM REWARD DATA</button>
+        </div>
+    </div>
     
     <div id="menu-overlay">
         <div style="position:absolute; top:20px; right:20px; font-size:3rem; color:var(--pink);" onclick="toggleMenu()">×</div>
@@ -112,11 +127,6 @@
     </div>
 
     <div id="screen-core" class="screen">
-        <!-- DAILY ATTENDANCE BANNER PANEL -->
-        <div id="daily-reward-banner" class="panel" style="display:none; text-align:center; border:2px solid var(--gold); background:rgba(241,196,15,0.08); padding:10px; margin-bottom:10px;">
-            <span id="daily-reward-text" style="font-family:'Orbitron'; font-size:0.7rem; color:var(--gold); font-weight:900;"></span>
-        </div>
-
         <div class="grade-grid">
             <div id="gp-50" class="grade-pill" onclick="App.setGrade(50)">K-1</div>
             <div id="gp-75" class="grade-pill" onclick="App.setGrade(75)">2-3</div>
@@ -126,7 +136,6 @@
             <div id="gp-400" class="grade-pill" onclick="App.setGrade(400)">ADULT</div>
         </div>
 
-        <!-- STREAK TRACKER UI FIELD -->
         <div id="streak-ticker">STREAK: 0</div>
 
         <div id="q-text">...</div>
@@ -264,15 +273,17 @@ const App = {
         this.pBoost = 1; this.pBoostEnd = 0;
         this.lastQInfo = null; 
         this.wrongStreak = 0; 
-        this.correctStreak = 0; // TRACKS STRINGS OF SUCCESSFUL MATH SOLUTIONS FOR MULTIPLIER ACCURACY
+        this.correctStreak = 0; 
+        this.pendingDailyGems = 0; // REWARD DATA STORAGE STATE
+        this.pendingTrackerObject = null;
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
-        this.checkDailyReward(); // PROCESS CONSECUTIVE LOGINS AT SYSTEM BOOT
+        this.checkDailyReward(); 
         setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
     getTag(rb) { if(rb >= 20) return 'tag-gold'; if(rb >= 10) return 'tag-pink'; if(rb >= 5) return 'tag-neon'; return ''; },
     
-    // NEW CONSECUTIVE DAILY TRACKER SYSTEM
+    // UPDATED INTERCEPT: FORCES A PHYSICAL POPUP CLAIM SCREEN ON REWARD ATTENDANCE EVENTS
     async checkDailyReward() {
         if(this.u === 'KING') return;
         const now = new Date();
@@ -281,10 +292,7 @@ const App = {
         const snap = await DB.ref(`users/${this.u}/dailyTracker`).once('value');
         let tracker = snap.val() || { lastLoginDate: "", currentStreak: 0 };
         
-        if (tracker.lastLoginDate === todayStr) {
-            // Already checked in today, gracefully skip reward prompt
-            return;
-        }
+        if (tracker.lastLoginDate === todayStr) return;
 
         let newStreak = 1;
         if (tracker.lastLoginDate) {
@@ -294,32 +302,31 @@ const App = {
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             
             if (diffDays === 1) {
-                // Consecutive attendance locked! Increment day counts
                 newStreak = (tracker.currentStreak || 0) + 1;
             } else {
-                // Day missed. Reset system streak metrics back to day 1
                 newStreak = 1;
             }
         }
 
-        const payoutGems = newStreak * 500;
-        this.gems += payoutGems;
-        
-        // Update database payload immediately
+        this.pendingDailyGems = newStreak * 500;
+        this.pendingTrackerObject = { lastLoginDate: todayStr, currentStreak: newStreak };
+
+        // FIRE OVERLAY MODAL UI DIRECTLY
+        document.getElementById('popup-streak-title').innerText = `STREAK STAGE: DAY ${newStreak}`;
+        document.getElementById('popup-reward-desc').innerText = `+${this.pendingDailyGems.toLocaleString()} GEMS READY`;
+        document.getElementById('screen-daily-claim').style.display = 'flex';
+    },
+
+    // RESOLVES REWARD PAYOUT FROM BUTTON ON THE NEW POPUP SCREEN
+    async claimDailyGems() {
+        this.gems += this.pendingDailyGems;
         await DB.ref(`users/${this.u}`).update({
             gems: this.gems,
-            dailyTracker: { lastLoginDate: todayStr, currentStreak: newStreak }
+            dailyTracker: this.pendingTrackerObject
         });
 
-        // Flash educational announcement ribbon on matrix workspace
-        const banner = document.getElementById('daily-reward-banner');
-        const bannerTxt = document.getElementById('daily-reward-text');
-        if (banner && bannerTxt) {
-            bannerTxt.innerText = `📅 CONSECUTIVE LOGIN BONUS (DAY ${newStreak}): +${payoutGems.toLocaleString()} 💎 INJECTED!`;
-            banner.style.display = 'block';
-            confetti({ particleCount: 40, spread: 60 });
-            setTimeout(() => { banner.style.display = 'none'; }, 7000);
-        }
+        document.getElementById('screen-daily-claim').style.display = 'none';
+        confetti({ particleCount: 100, spread: 80 });
     },
 
     setupSync() {
@@ -434,7 +441,6 @@ const App = {
         document.getElementById('screen-lucky-roll').style.display = 'none';
     },
 
-    // MULTI-TIER ROTATING TEACHER HINTS Engine
     getMathHint(info) {
         if(!info) return "Check your calculations carefully!";
         const { grade, type, a, b } = info;
@@ -563,7 +569,6 @@ const App = {
         const rewards = { 50: 100, 75: 200, 100: 300, 150: 400, 250: 600, 400: 800 };
         let pot = Math.floor((rewards[this.grade] || 100) * (1 + this.rebirth * 0.3));
         
-        // EVALUATE CURRENT STREAK MODIFIER BEFORE GLOBAL CALCS
         let streakMultiplier = 1.0;
         const ticker = document.getElementById('streak-ticker');
         if (this.correctStreak > 0) {
@@ -590,7 +595,6 @@ const App = {
         }
         if(this.boostActive || currentActiveMultiplier > 1) pot = Math.floor(pot * currentActiveMultiplier);
         
-        // APPLY STREAK ENGINE VALUE ON TOP OF POT REWARDS
         pot = Math.floor(pot * streakMultiplier);
 
         document.getElementById('q-text').innerText = display;
@@ -607,14 +611,14 @@ const App = {
                 if (Math.abs(parseFloat(o) - parseFloat(ans)) < 0.01) { 
                     this.gems += pot; 
                     this.wrongStreak = 0; 
-                    this.correctStreak += 1; // ACCUMULATE SUCCESSFUL STEPS FOR STREAK BOOSTS
+                    this.correctStreak += 1; 
                     confetti({ particleCount: 30 }); 
                     DB.ref('users/' + this.u).update({ gems: this.gems }); 
                     this.nextQ();
                 } else { 
                     this.gems = Math.max(0, this.gems - Math.floor(pot/2)); 
                     this.wrongStreak += 1; 
-                    this.correctStreak = 0; // RESET REWARDS STREAK ON INACCURATE GUESS
+                    this.correctStreak = 0; 
                     DB.ref('users/' + this.u).update({ gems: this.gems }); 
                     alert(this.getMathHint(this.lastQInfo));
                     this.nextQ();
