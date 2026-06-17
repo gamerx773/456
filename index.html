@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATH MATRIX: EVOLUTION V23.4</title>
+    <title>MATH MATRIX: BC CURRICULUM EDITION V24.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -70,7 +70,7 @@
 <body>
     <canvas id="world"></canvas>
 
-    #screen-lucky-roll { position: fixed; inset: 0; z-index: 9000; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px); }
+    <!-- LUCKY BLOCK SLOT OVERLAY -->
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
@@ -85,6 +85,7 @@
         </div>
     </div>
 
+    <!-- DAILY REWARD OVERLAY SCREEN POPUP -->
     <div id="screen-daily-claim">
         <div class="panel" style="width:85%; text-align:center; border:2px solid var(--gold); background:var(--glass);">
             <h1 style="font-family:'Orbitron'; color:var(--gold); font-size:1.8rem; margin-bottom:5px;">DAILY MATRIX SYNC</h1>
@@ -117,17 +118,16 @@
         </div>
     </div>
 
+    <!-- AUTHENTICATION CONTAINER WINDOW -->
     <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center; z-index:6000; padding:0;">
         <div class="panel" style="width: 85%; text-align: center;">
             <h2 id="auth-title" style="font-family:'Orbitron'; color:var(--neon); margin-bottom:5px;">MATH MATRIX INITIALIZE</h2>
-            
             <p id="auth-slogan" style="font-family:'JetBrains Mono'; color:#aaa; font-size:0.75rem; margin:0 0 20px 0; letter-spacing:0.5px;">log in and test your math skills</p>
             
             <input type="text" id="auth-u" class="input-field" placeholder="USER ID">
             <input type="password" id="auth-p" class="input-field" placeholder="PASSCODE">
             
             <button id="auth-primary-btn" class="action-btn" style="background:var(--neon); color:black;" onclick="Auth.execute()">ENTER MATH MATRIX</button>
-            
             <button id="auth-toggle-btn" class="action-btn" style="background:transparent; color:#888; border:1px dashed #444; font-size:0.65rem; margin-top:15px;" onclick="Auth.toggleMode()">FIRST TIME? CREATE NEW ACCOUNT</button>
         </div>
     </div>
@@ -267,7 +267,6 @@ const Auth = {
             primaryBtn.style.background = "var(--pink)";
             toggleBtn.innerText = "ALREADY HAVE AN ACCOUNT? LOG IN";
         } else {
-            // REBRANDED LABELS UPON RETURNING FROM REGISTRATION
             title.innerText = "MATH MATRIX INITIALIZE";
             title.style.color = "var(--neon)";
             slogan.innerText = "log in and test your math skills";
@@ -400,6 +399,94 @@ const App = {
         confetti({ particleCount: 100, spread: 80 });
     },
 
+    // BC MINISTRY OF EDUCATION BUILDING STUDENT SUCCESS MATH CURRICULUM ALIGNMENTS
+    getMathHint(info) {
+        if(!info) return "Check your calculations carefully!";
+        const { grade, type, a, b } = info;
+        const alternateIndex = this.wrongStreak % 2;
+
+        const hintsPool = {
+            // BC MATH: Kindergarten to Grade 1 (Decomposing numbers, counting on, addition/subtraction fluency to 20)
+            "50-1": [
+                `🍁 BC MATH HINT: Try 'counting on' to combine quantities. Anchor the larger value (${a}) in your head and jump forward ${b} spaces!`,
+                `🍁 BC MATH HINT: Visualize concrete objects! If you merge a distinct group of ${a} blocks with ${b} blocks, what is your total collection size?`
+            ],
+            "50-2": [
+                `🍁 BC MATH HINT: Subtraction calculates difference. If you start with a whole value of ${a} and pull away ${b}, count what remains behind.`,
+                `🍁 BC MATH HINT: Think of number relationships. What missing part added to ${b} balances your scale back up to ${a}?`
+            ],
+            // BC MATH: Grade 2 to Grade 3 (Place-value concepts to 1000, addition/subtraction regrouping, equal group arrays)
+            "75-1": [
+                `🍁 BC MATH HINT: Stack your numbers to check place value columns (Ones, Tens, Hundreds). If your Ones total is over 9, regroup 10 ones into 1 ten!`,
+                `🍁 BC MATH HINT: Decompose to estimate! Sum your base columns (tens places) first, then look at your single digits to see if you cross a threshold.`
+            ],
+            "75-2": [
+                `🍁 BC MATH HINT: Multiplication (${a} × ${b}) means equal groups. Picture ${b} separate groups on a desk, where every single group holds exactly ${a} items.`,
+                `🍁 BC MATH HINT: Use an array grid! Count by skipping intervals of ${a}, keeping track of the pattern ${b} distinct times.`
+            ],
+            "75-3": [
+                `🍁 BC MATH HINT: Stack your columns. If the top digit in your Ones place is too small to take away ${b}, decompose 1 ten from your Tens column into 10 ones.`,
+                `🍁 BC MATH HINT: Work backwards to confirm. Does your computed answer combined back onto ${b} return you exactly to ${a}?`
+            ],
+            // BC MATH: Grade 4 to Grade 5 (Multiplication/division fluency, decimals/fractions as equal parts of a whole place-value system)
+            "100-1": [
+                `🍁 BC MATH HINT: Use the distributive matrix. Multiply your factor across the ones place value first, add a zero placeholder line, and calculate the tens column.`,
+                `🍁 BC MATH HINT: Split the factors down into friendly chunks! Calculate your partial products separately, then add them back together.`
+            ],
+            "100-2": [
+                `🍁 BC MATH HINT: Division (${a} ÷ ${b}) is splitting collections evenly. If you share a total budget of ${a} gems among ${b} players, what is the fair share?`,
+                `🍁 BC MATH HINT: Use your multiplication core facts! What factor times ${b} targets a product value of exactly ${a}?`
+            ],
+            "100-3": [
+                `🍁 BC MATH HINT: Decimals are fractional place values. To preserve absolute values, line up your decimal points vertically before calculating columns!`,
+                `🍁 BC MATH HINT: Keep your place values aligned: Tenths to Tenths, Ones to Ones. Pad short columns with a zero to keep things neat.`
+            ],
+            // BC MATH: Grade 6 to Grade 7 (Integer properties, operations with positive/negative values, preserving equality in linear variables)
+            "150-1": [
+                `🍁 BC MATH HINT: Treat negative values like altitude or account balances. If you are starting at \$${Math.abs(a)} in debt (-${Math.abs(a)}) and earn \$${b}, determine your net total.`,
+                `🍁 BC MATH HINT: Visualize a standard integer number line. Anchor your starting point at coordinates (${a}) and step towards the right by ${b} intervals.`
+            ],
+            "150-2": [
+                `🍁 BC MATH HINT: Preservation of Equality! To clear the coefficient in ${a}x = ${b}, apply the inverse operation by dividing both balance tracks by ${a}.`,
+                `🍁 BC MATH HINT: The equal sign behaves like a physical balance scale. Whatever scale adjustment you apply to one side, you must apply to the other.`
+            ],
+            "150-3": [
+                `🍁 BC MATH HINT: Percentages are fractional ratios comparing parts out of a whole of 100. Convert ${a}% into a fraction (${a}/100) or decimal before calculating.`,
+                `🍁 BC MATH HINT: Use your benchmark anchors! Find 10% by shifting the decimal one spot left, or find 50% by dividing your total directly in half.`
+            ],
+            // BC MATH: Grade 8 to Grade 12 (Linear parsing, perfect square configurations, exponents as base factor strings)
+            "250-1": [
+                `🍁 BC MATH HINT: Undo operations in reverse order (SAMDEB). Isolate the algebraic block by subtracting ${b} from the total first, then divide by coefficient ${a}.`,
+                `🍁 BC MATH HINT: Strip away any additive constants on your target side before attempting to simplify the remaining variables.`
+            ],
+            "250-2": [
+                `🍁 BC MATH HINT: Square roots (√) trace inverse area operations. If a square workspace has an area of the inside number, what is the length of one straight side?`,
+                `🍁 BC MATH HINT: Think of twin matching factors. What single number multiplied directly against itself returns that internal value?`
+            ],
+            "250-3": [
+                `🍁 BC MATH HINT: Exponential bases express repeated operations. Write down your base number (${a}) and chain multiply it against itself ${b} times total.`,
+                `🍁 BC MATH HINT: Watch out for the common multi-trap! It is NOT base times power. Calculate a compounding string of numbers.`
+            ],
+            // ADULT HIGHER TIER TRACKS (Matrix determinants, log exponents, rates of change)
+            "400-1": [
+                `🍁 BC MATH HINT: Power Rule application: Shunt the exponential power degree down to multiply against the front coefficient, then drop the remaining exponent by 1.`,
+                `🍁 BC MATH HINT: Derivatives identify instantaneous slope positions along a curve function.`
+            ],
+            "400-2": [
+                `🍁 BC MATH HINT: Evaluate the primary downward matrix diagonal product, then subtract the cross product value of the upward secondary diagonal line.`,
+                `🍁 BC MATH HINT: Execute the standard vector determinant algorithm sequence formula: (a * d) - (b * c).`
+            ],
+            "400-3": [
+                `🍁 BC MATH HINT: Logarithms solve for powers. The expression is isolating the missing exponent needed to raise base ${b} into your target value.`,
+                `🍁 BC MATH HINT: Restructure the block back into an active exponential structure: Base (${b}) raised to what power equals the parameter?`
+            ]
+        };
+
+        const key = `${grade}-${type}`;
+        if (hintsPool[key]) return hintsPool[key][alternateIndex];
+        return "Double check your operations step-by-step!";
+    },
+
     setupSync() {
         DB.ref('users/'+this.u).on('value', s => {
             const v = s.val(); if(!v) return;
@@ -512,93 +599,6 @@ const App = {
         document.getElementById('screen-lucky-roll').style.display = 'none';
     },
 
-    getMathHint(info) {
-        if(!info) return "Check your calculations carefully!";
-        const { grade, type, a, b } = info;
-        const alternateIndex = this.wrongStreak % 2;
-
-        const hintsPool = {
-            "50-1": [
-                `💡 HINT 1: When adding ${a} + ${b}, count up from ${a} by ${b} spaces. If the column sum goes over 9, remember to carry the 1 to the tens place!`,
-                `💡 HINT 2: Think of blocks! If you have a stack of ${a} blocks and add ${b} more blocks on top, count the total size of the combined stack.`
-            ],
-            "50-2": [
-                `💡 HINT 1: For ${a} - ${b}, think of what number you need to add to ${b} to match up to ${a}. If the top digit is too small, you must borrow!`,
-                `💡 HINT 2: Subtraction is taking items away. Imagine you have ${a} gems, and someone removes ${b} of them. How many are left over?`
-            ],
-            "75-1": [
-                `💡 HINT 1: Double check your columns! Stack your numbers vertically, line up the place values, and don't forget to regroup columns.`,
-                `💡 HINT 2: Try rounding the numbers to the nearest 10 first to estimate your target answer, then perform precise column addition.`
-            ],
-            "75-2": [
-                `💡 HINT 1: Multiplication (${a} × ${b}) means adding groups! Try adding ${a} to itself ${b} times, or think of it as a grid of blocks.`,
-                `💡 HINT 2: Think of skip counting! Count by ${a}, ${b} separate times to track down the product.`
-            ],
-            "75-3": [
-                `💡 HINT 1: Line up your ones and tens columns cleanly. If the top number's bottom value is smaller than the lower one, borrow from the tens place.`,
-                `💡 HINT 2: Work columns backward! Check if your answer added back onto ${b} matches up to ${a} perfectly.`
-            ],
-            "100-1": [
-                `💡 HINT 1: Breaking large grid multiplication into smaller parts can help. Multiply by the ones place first, then append a zero for the tens place!`,
-                `💡 HINT 2: Use estimation to gauge the result size. ${a} groups of ${b} can be tracked step-by-step or with area matrix formatting.`
-            ],
-            "100-2": [
-                `💡 HINT 1: Division (${a} ÷ ${b}) asks: how many times does ${b} fit entirely inside ${a}? Work backward using multiplication!`,
-                `💡 HINT 2: Think of sharing items evenly. If you have ${a} gems split into ${b} equal teams, how many gems does each team receive?`
-            ],
-            "100-3": [
-                `💡 HINT 1: When adding decimals (${a} + ${b}), remember the absolute rule: ALWAYS line up your decimal points vertically before adding!`,
-                `💡 HINT 2: Place value matters! Make sure you add tenths to tenths, and ones to ones. Pad empty spaces with zeros if columns don't match.`
-            ],
-            "150-1": [
-                `💡 HINT 1: Adding a positive to a negative number is like moving right on a number line. Start at ${a} and jump forward ${b}.`,
-                `💡 HINT 2: Think of integers like temperature or debt. If you owe \$${Math.abs(a)} (-${Math.abs(a)}) and earn \$${b}, evaluate your net total.`
-            ],
-            "150-2": [
-                `💡 HINT 1: To solve an equation like ${a}x = ${b}, perform the inverse operation! Divide both sides by ${a} to isolate the x variable.`,
-                `💡 HINT 2: The equal sign is a balance scale! Whatever operation you apply to one side to clear a value, you must apply to the other side.`
-            ],
-            "150-3": [
-                `💡 HINT 1: To find a percentage, turn it into a fraction or decimal first. Remember: ${a}% means ${a} out of 100 (${a/100}).`,
-                `💡 HINT 2: Think of parts of a total. 50% is half, 25% is a quarter, and 10% is dividing by 10. Use these milestones to track the value.`
-            ],
-            "250-1": [
-                `💡 HINT 1: Isolate the x term! First subtract ${b} from the total, then divide the remaining value by ${a} to pinpoint your answer.`,
-                `💡 HINT 2: Work the equation backward like a puzzle. Undo operations in reverse order of operations (reverse PEMDAS).`
-            ],
-            "250-2": [
-                `💡 HINT 1: A square root (√) is looking for the hidden pair. What number multiplied by itself equals the value inside?`,
-                `💡 HINT 2: Squaring and square roots are opposites. If x times x equals the inside value, then x is your root target.`
-            ],
-            "250-3": [
-                `💡 HINT 1: An exponent (${a}^${b}) means multiplying the base number (${a}) by itself over and over. You do it ${b} times!`,
-                `💡 HINT 2: Warning: It is NOT base times power! ${a}^${b} means writing down ${a}, ${b} times, and multiplying across.`
-            ],
-            "400-1": [
-                `💡 HINT 1: Power Rule reminder: d/dx (cx^e) = (c * e) * x^(e - 1). Bring the exponent down to multiply, then subtract 1 from the power!`,
-                `💡 HINT 2: Derivatives find slopes. Bring down the exponent ${b} to multiply against ${a}, then lower the variable's power degree by one.`
-            ],
-            "400-2": [
-                `💡 HINT 1: To calculate the determinant of a 2x2 matrix [a, b | c, d], execute the cross formula multiplication: (a * d) - (b * c).`,
-                `💡 HINT 2: Multiply the primary diagonal downward, then subtract the product of the secondary upward diagonal.`
-            ],
-            "400-3": [
-                `💡 HINT 1: Logarithms are exponents in disguise! log_b(v) = ? is simply asking: 'What power do I raise ${b} to in order to get the inside value?'`,
-                `💡 HINT 2: Convert to an exponential equations structure. If base ${b} raised to the power of x equals your value, find x.`
-            ]
-        };
-
-        const key = `${grade}-${type}`;
-        if (hintsPool[key]) return hintsPool[key][alternateIndex];
-        return "Double check your operations step-by-step!";
-    },
-
-    toggleBan(u, isBanned) { if(confirm(`ARE YOU SURE YOU WANT TO CHANGE ACCESS STATUS FOR: ${u}?`)) { DB.ref('users/' + u).update({ banned: !isBanned }); } },
-    omegaWipe() { if(confirm("⚠️ CRITICAL WARNING: THIS WILL RESET ALL PLAYERS. ARE YOU ABSOLUTELY SURE?")) { DB.ref('users').once('value', s => { s.forEach(c => { const userId = c.key; if(userId !== 'KING') { DB.ref('users/' + userId).update({ gems: 500, rebirth: 0, timePlayed: 0, backpack: null, banned: false, isAdmin: false, isBannedFromLB: false, dailyTracker: null }); } }); alert("SYSTEM RESET COMPLETE."); }); } },
-    kingSetBoost() { const rawMult = document.getElementById('k-boost-mult').value.toLowerCase().replace('x', ''); let mult = parseInt(rawMult); const sec = parseInt(document.getElementById('k-boost-time').value); if(isNaN(mult) || mult < 1) mult = 1; if(mult > 10) mult = 10; if(!isNaN(sec) && sec > 0) { DB.ref('system/boost').set({ end: Date.now() + (sec * 1000), mult: mult }); alert(`${mult}X BOOST ACTIVATED FOR ${sec}s`); } },
-    generateColors() { const sel = document.getElementById('k-color-select'); if(!sel) return; for(let i=0; i<360; i+=8) { let hue = `hsl(${i}, 100%, 60%)`; let opt = document.createElement('option'); opt.value = hue; opt.innerText = `SPECTRUM V-${i}`; opt.style.color = hue; sel.appendChild(opt); } },
-    kingSetColor() { const target = document.getElementById('k-target-user').value.toUpperCase().trim(); const color = document.getElementById('k-color-select').value; if(target) DB.ref('users/' + target).update({ color: color }).then(() => alert("IDENTITY OVERRIDE SUCCESSFUL")); },
-    kingSetRebirth() { const target = document.getElementById('k-rb-user').value.toUpperCase().trim(); const val = parseInt(document.getElementById('k-rb-val').value); if(target && !isNaN(val)) { DB.ref('users/' + target).update({ rebirth: val }).then(() => alert("REBIRTH OVERRIDE SUCCESSFUL")); } },
     setGrade(g) { this.grade = g; document.querySelectorAll('.grade-pill').forEach(p => p.classList.remove('active')); document.getElementById('gp-'+g).classList.add('active'); this.nextQ(); },
     nextQ() {
         let ans, display; const type = rand(1, 3);
@@ -661,11 +661,8 @@ const App = {
         }
 
         let currentActiveMultiplier = this.boostMultiplier;
-        if (Math.ceil((this.pBoostEnd - Date.now()) / 1000) > 0) {
-            currentActiveMultiplier = 5;
-        }
+        if (Math.ceil((this.pBoostEnd - Date.now()) / 1000) > 0) { currentActiveMultiplier = 5; }
         if(this.boostActive || currentActiveMultiplier > 1) pot = Math.floor(pot * currentActiveMultiplier);
-        
         pot = Math.floor(pot * streakMultiplier);
 
         document.getElementById('q-text').innerText = display;
@@ -680,19 +677,13 @@ const App = {
             const btn = document.createElement('button'); btn.className = 'math-opt'; btn.innerText = o;
             btn.onclick = () => { 
                 if (Math.abs(parseFloat(o) - parseFloat(ans)) < 0.01) { 
-                    this.gems += pot; 
-                    this.wrongStreak = 0; 
-                    this.correctStreak += 1; 
-                    confetti({ particleCount: 30 }); 
+                    this.gems += pot; this.wrongStreak = 0; this.correctStreak += 1; confetti({ particleCount: 30 }); 
                     if(this.u) DB.ref('users/' + this.u).update({ gems: this.gems }); 
                     this.nextQ();
                 } else { 
-                    this.gems = Math.max(0, this.gems - Math.floor(pot/2)); 
-                    this.wrongStreak += 1; 
-                    this.correctStreak = 0; 
+                    this.gems = Math.max(0, this.gems - Math.floor(pot/2)); this.wrongStreak += 1; this.correctStreak = 0; 
                     if(this.u) DB.ref('users/' + this.u).update({ gems: this.gems }); 
-                    alert(this.getMathHint(this.lastQInfo));
-                    this.nextQ();
+                    alert(this.getMathHint(this.lastQInfo)); this.nextQ();
                 } 
             }; 
             grid.appendChild(btn);
@@ -715,6 +706,9 @@ const App = {
     sendBroadcast() { const m = document.getElementById('k-msg').value.toUpperCase(); if(m) DB.ref('system/broadcast').set("👑 KING: " + m); },
     dispatchGEMS() { const t = document.getElementById('k-dest').value.toUpperCase().trim(); const a = parseInt(document.getElementById('k-amt').value); if(t && !isNaN(a)) { DB.ref('users/'+t+'/gems').transaction(g => (g || 0) + a); alert("DISPATCHED"); } },
     collectTax() { DB.ref('users').once('value', s => { let total = 0; s.forEach(c => { const d = c.val(); if(d.name !== 'KING' && d.gems > 50) { const tx = Math.floor(d.gems * 0.05); DB.ref('users/'+c.key+'/gems').transaction(g => g - tx); total += tx; }}); DB.ref('users/KING/gems').transaction(g => (g || 0) + total); alert("TAXED: " + total); }); },
+    generateColors() { const sel = document.getElementById('k-color-select'); if(!sel) return; for(let i=0; i<360; i+=8) { let hue = `hsl(${i}, 100%, 60%)`; let opt = document.createElement('option'); opt.value = hue; opt.innerText = `SPECTRUM V-${i}`; opt.style.color = hue; sel.appendChild(opt); } },
+    kingSetColor() { const target = document.getElementById('k-target-user').value.toUpperCase().trim(); const color = document.getElementById('k-color-select').value; if(target) DB.ref('users/' + target).update({ color: color }).then(() => alert("IDENTITY OVERRIDE SUCCESSFUL")); },
+    kingSetRebirth() { const target = document.getElementById('k-rb-user').value.toUpperCase().trim(); const val = parseInt(document.getElementById('k-rb-val').value); if(target && !isNaN(val)) { DB.ref('users/' + target).update({ rebirth: val }).then(() => alert("REBIRTH OVERRIDE SUCCESSFUL")); } },
     init3D() { this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000); this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('world'), alpha: true }); this.renderer.setSize(window.innerWidth, window.innerHeight); this.mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(15, 1), new THREE.MeshBasicMaterial({color: 0x00f2ff, wireframe: true})); this.scene.add(this.mesh); this.camera.position.z = 40; },
     animate() { requestAnimationFrame(()=>this.animate()); if(this.mesh) { this.mesh.rotation.y += 0.005; } this.renderer.render(this.scene, this.camera); }
 };
