@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V23.2</title>
+    <title>MATRIX: EVOLUTION V23.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -70,7 +70,6 @@
 <body>
     <canvas id="world"></canvas>
 
-    <!-- LUCKY BLOCK SLOT OVERLAY -->
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
@@ -85,7 +84,6 @@
         </div>
     </div>
 
-    <!-- DAILY REWARD OVERLAY SCREEN POPUP -->
     <div id="screen-daily-claim">
         <div class="panel" style="width:85%; text-align:center; border:2px solid var(--gold); background:var(--glass);">
             <h1 style="font-family:'Orbitron'; color:var(--gold); font-size:1.8rem; margin-bottom:5px;">DAILY MATRIX SYNC</h1>
@@ -104,8 +102,6 @@
         <div class="menu-link" onclick="App.openCollection(); toggleMenu()">BACKPACK</div>
         <div class="menu-link" onclick="Router.go('rank'); toggleMenu()">RANKINGS</div>
         <div id="king-link" class="menu-link" style="display:none; color:var(--gold);" onclick="Router.go('king'); toggleMenu()">KING TERMINAL</div>
-        
-        <!-- NEW GLOBAL LOGOUT LINK AT BOTTOM OF OVERLAY MENU -->
         <div class="menu-link" style="color:var(--red); font-size:1.3rem; margin-top:30px; border:1px dashed var(--red); padding:5px 15px; border-radius:8px;" onclick="Auth.logout()">LOGOUT USER</div>
     </div>
 
@@ -120,15 +116,15 @@
         </div>
     </div>
 
-    <!-- AUTHENTICATION CONTAINER WINDOW -->
     <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center; z-index:6000; padding:0;">
         <div class="panel" style="width: 85%; text-align: center;">
-            <h2 id="auth-title" style="font-family:'Orbitron'; color:var(--neon); margin-bottom:20px;">MATRIX INITIALIZE</h2>
+            <h2 id="auth-title" style="font-family:'Orbitron'; color:var(--neon); margin-bottom:5px;">MATRIX INITIALIZE</h2>
+            
+            <p id="auth-slogan" style="font-family:'JetBrains Mono'; color:#aaa; font-size:0.75rem; margin:0 0 20px 0; letter-spacing:0.5px;">log in and test your math skills</p>
+            
             <input type="text" id="auth-u" class="input-field" placeholder="USER ID">
             <input type="password" id="auth-p" class="input-field" placeholder="PASSCODE">
             <button id="auth-primary-btn" class="action-btn" style="background:var(--neon); color:black;" onclick="Auth.execute()">ENTER MATRIX</button>
-            
-            <!-- NEW ACCOUNT TOGGLE ARCHITECTURE LINK BUTTON -->
             <button id="auth-toggle-btn" class="action-btn" style="background:transparent; color:#888; border:1px dashed #444; font-size:0.65rem; margin-top:15px;" onclick="Auth.toggleMode()">FIRST TIME? CREATE NEW ACCOUNT</button>
         </div>
     </div>
@@ -245,11 +241,12 @@ const DB = firebase.database();
 
 const Auth = {
     badWords: ["ASS", "FUCK", "SHIT", "PISS", "DIC", "DIK", "COCK", "CUNT", "SLUT", "BITCH", "NIG", "SEX", "GAY"],
-    isRegisterMode: false, // CONTROLS LOGIN SCREEN RENDERING PROPERTIES
+    isRegisterMode: false,
 
     toggleMode() {
         this.isRegisterMode = !this.isRegisterMode;
         const title = document.getElementById('auth-title');
+        const slogan = document.getElementById('auth-slogan');
         const primaryBtn = document.getElementById('auth-primary-btn');
         const toggleBtn = document.getElementById('auth-toggle-btn');
         const uInput = document.getElementById('auth-u');
@@ -260,6 +257,7 @@ const Auth = {
         if(this.isRegisterMode) {
             title.innerText = "MATRIX REGISTRATION";
             title.style.color = "var(--pink)";
+            slogan.innerText = "create a user id and create a passcode";
             uInput.placeholder = "CREATE USER ID";
             pInput.placeholder = "CREATE PASSCODE";
             primaryBtn.innerText = "CONFIRM & CREATE ACCOUNT";
@@ -268,6 +266,7 @@ const Auth = {
         } else {
             title.innerText = "MATRIX INITIALIZE";
             title.style.color = "var(--neon)";
+            slogan.innerText = "log in and test your math skills";
             uInput.placeholder = "USER ID";
             pInput.placeholder = "PASSCODE";
             primaryBtn.innerText = "ENTER MATRIX";
@@ -288,17 +287,15 @@ const Auth = {
         let d = s.val();
 
         if (this.isRegisterMode) {
-            // REGISTRATION MODE FOR FRESH USERS
             if(d) { alert("❌ ACCOUNT ID UNVAILABLE. CHOOSE ANOTHER USER ID."); return; }
             if(u === 'KING') { alert("❌ RESTRICTED CRITICAL SERVER TERMINAL ENTRY"); return; }
             
             d = { name: u, pass: p, gems: 500, rebirth: 0, timePlayed: 0, banned: false };
             await DB.ref('users/' + u).set(d);
             alert("✅ ACCOUNT PROVISIONED SUCCESSFUL! LOGGING IN...");
-            this.toggleMode(); // FLIP VIEW BACK TO INITIALIZATION STATE
+            this.toggleMode(); 
         }
 
-        // LOGIN ACCESS PROTOCOL
         if(d && d.banned === true) { alert("🛑 ACCESS REVOKED: THIS ACCOUNT HAS BEEN BANNED."); return; }
         if(d && d.pass === p) {
             document.getElementById('screen-auth').style.display='none';
@@ -310,21 +307,18 @@ const Auth = {
 
     logout() {
         if(confirm("ARE YOU SURE YOU WANT TO TERMINATE ACCESS?")) {
-            // SHUTDOWN ALL LIVE DATABASE SYNC HANDLERS
             if(App.u) DB.ref('users/' + App.u).off();
             if(App.boostInterval) clearInterval(App.boostInterval);
 
-            // CLEAR MEMORY CACHE ARCHITECTURES
             App.u = null; App.gems = 0; App.rebirth = 0; App.correctStreak = 0; App.wrongStreak = 0;
 
-            // RESET LAYOUT INTERFACES
             document.getElementById('hud').style.display = 'none';
             document.getElementById('king-link').style.display = 'none';
             document.getElementById('menu-overlay').style.display = 'none';
             document.getElementById('auth-u').value = '';
             document.getElementById('auth-p').value = '';
             
-            if(this.isRegisterMode) this.toggleMode(); // FORCE NORMAL LOGIN STATE VIEW
+            if(this.isRegisterMode) this.toggleMode(); 
 
             document.querySelectorAll('.screen').forEach(x => x.style.display = 'none');
             document.getElementById('screen-auth').style.display = 'flex';
