@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V23.3</title>
+    <title>MATH MATRIX: EVOLUTION V23.4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -70,6 +70,7 @@
 <body>
     <canvas id="world"></canvas>
 
+    #screen-lucky-roll { position: fixed; inset: 0; z-index: 9000; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px); }
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
@@ -118,13 +119,15 @@
 
     <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center; z-index:6000; padding:0;">
         <div class="panel" style="width: 85%; text-align: center;">
-            <h2 id="auth-title" style="font-family:'Orbitron'; color:var(--neon); margin-bottom:5px;">MATRIX INITIALIZE</h2>
+            <h2 id="auth-title" style="font-family:'Orbitron'; color:var(--neon); margin-bottom:5px;">MATH MATRIX INITIALIZE</h2>
             
             <p id="auth-slogan" style="font-family:'JetBrains Mono'; color:#aaa; font-size:0.75rem; margin:0 0 20px 0; letter-spacing:0.5px;">log in and test your math skills</p>
             
             <input type="text" id="auth-u" class="input-field" placeholder="USER ID">
             <input type="password" id="auth-p" class="input-field" placeholder="PASSCODE">
-            <button id="auth-primary-btn" class="action-btn" style="background:var(--neon); color:black;" onclick="Auth.execute()">ENTER MATRIX</button>
+            
+            <button id="auth-primary-btn" class="action-btn" style="background:var(--neon); color:black;" onclick="Auth.execute()">ENTER MATH MATRIX</button>
+            
             <button id="auth-toggle-btn" class="action-btn" style="background:transparent; color:#888; border:1px dashed #444; font-size:0.65rem; margin-top:15px;" onclick="Auth.toggleMode()">FIRST TIME? CREATE NEW ACCOUNT</button>
         </div>
     </div>
@@ -264,12 +267,13 @@ const Auth = {
             primaryBtn.style.background = "var(--pink)";
             toggleBtn.innerText = "ALREADY HAVE AN ACCOUNT? LOG IN";
         } else {
-            title.innerText = "MATRIX INITIALIZE";
+            // REBRANDED LABELS UPON RETURNING FROM REGISTRATION
+            title.innerText = "MATH MATRIX INITIALIZE";
             title.style.color = "var(--neon)";
             slogan.innerText = "log in and test your math skills";
             uInput.placeholder = "USER ID";
             pInput.placeholder = "PASSCODE";
-            primaryBtn.innerText = "ENTER MATRIX";
+            primaryBtn.innerText = "ENTER MATH MATRIX";
             primaryBtn.style.background = "var(--neon)";
             toggleBtn.innerText = "FIRST TIME? CREATE NEW ACCOUNT";
         }
