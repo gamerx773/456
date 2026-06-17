@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MATRIX: EVOLUTION V23.1</title>
+    <title>MATRIX: EVOLUTION V23.2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -23,7 +23,7 @@
         #lucky-result-screen { text-align: center; display: none; animation: zoomIn 0.5s ease; }
         @keyframes zoomIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* NEW DEDICATED DAILY LOGIN REWARD POPUP SCREEN */
+        /* DAILY LOGIN REWARD POPUP SCREEN */
         #screen-daily-claim { position: fixed; inset: 0; z-index: 8500; background: rgba(0,0,0,0.96); display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(25px); }
 
         /* HUD */
@@ -85,7 +85,7 @@
         </div>
     </div>
 
-    <!-- NEW DAILY REWARD OVERLAY SCREEN POPUP -->
+    <!-- DAILY REWARD OVERLAY SCREEN POPUP -->
     <div id="screen-daily-claim">
         <div class="panel" style="width:85%; text-align:center; border:2px solid var(--gold); background:var(--glass);">
             <h1 style="font-family:'Orbitron'; color:var(--gold); font-size:1.8rem; margin-bottom:5px;">DAILY MATRIX SYNC</h1>
@@ -104,6 +104,9 @@
         <div class="menu-link" onclick="App.openCollection(); toggleMenu()">BACKPACK</div>
         <div class="menu-link" onclick="Router.go('rank'); toggleMenu()">RANKINGS</div>
         <div id="king-link" class="menu-link" style="display:none; color:var(--gold);" onclick="Router.go('king'); toggleMenu()">KING TERMINAL</div>
+        
+        <!-- NEW GLOBAL LOGOUT LINK AT BOTTOM OF OVERLAY MENU -->
+        <div class="menu-link" style="color:var(--red); font-size:1.3rem; margin-top:30px; border:1px dashed var(--red); padding:5px 15px; border-radius:8px;" onclick="Auth.logout()">LOGOUT USER</div>
     </div>
 
     <div id="hud">
@@ -117,12 +120,16 @@
         </div>
     </div>
 
+    <!-- AUTHENTICATION CONTAINER WINDOW -->
     <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center; z-index:6000; padding:0;">
         <div class="panel" style="width: 85%; text-align: center;">
-            <h2 style="font-family:'Orbitron'; color:var(--neon); margin-bottom:20px;">MATRIX INITIALIZE</h2>
+            <h2 id="auth-title" style="font-family:'Orbitron'; color:var(--neon); margin-bottom:20px;">MATRIX INITIALIZE</h2>
             <input type="text" id="auth-u" class="input-field" placeholder="USER ID">
             <input type="password" id="auth-p" class="input-field" placeholder="PASSCODE">
-            <button class="action-btn" style="background:var(--neon); color:black;" onclick="Auth.execute()">ENTER MATRIX</button>
+            <button id="auth-primary-btn" class="action-btn" style="background:var(--neon); color:black;" onclick="Auth.execute()">ENTER MATRIX</button>
+            
+            <!-- NEW ACCOUNT TOGGLE ARCHITECTURE LINK BUTTON -->
+            <button id="auth-toggle-btn" class="action-btn" style="background:transparent; color:#888; border:1px dashed #444; font-size:0.65rem; margin-top:15px;" onclick="Auth.toggleMode()">FIRST TIME? CREATE NEW ACCOUNT</button>
         </div>
     </div>
 
@@ -238,22 +245,90 @@ const DB = firebase.database();
 
 const Auth = {
     badWords: ["ASS", "FUCK", "SHIT", "PISS", "DIC", "DIK", "COCK", "CUNT", "SLUT", "BITCH", "NIG", "SEX", "GAY"],
+    isRegisterMode: false, // CONTROLS LOGIN SCREEN RENDERING PROPERTIES
+
+    toggleMode() {
+        this.isRegisterMode = !this.isRegisterMode;
+        const title = document.getElementById('auth-title');
+        const primaryBtn = document.getElementById('auth-primary-btn');
+        const toggleBtn = document.getElementById('auth-toggle-btn');
+        const uInput = document.getElementById('auth-u');
+        const pInput = document.getElementById('auth-p');
+
+        uInput.value = ''; pInput.value = '';
+
+        if(this.isRegisterMode) {
+            title.innerText = "MATRIX REGISTRATION";
+            title.style.color = "var(--pink)";
+            uInput.placeholder = "CREATE USER ID";
+            pInput.placeholder = "CREATE PASSCODE";
+            primaryBtn.innerText = "CONFIRM & CREATE ACCOUNT";
+            primaryBtn.style.background = "var(--pink)";
+            toggleBtn.innerText = "ALREADY HAVE AN ACCOUNT? LOG IN";
+        } else {
+            title.innerText = "MATRIX INITIALIZE";
+            title.style.color = "var(--neon)";
+            uInput.placeholder = "USER ID";
+            pInput.placeholder = "PASSCODE";
+            primaryBtn.innerText = "ENTER MATRIX";
+            primaryBtn.style.background = "var(--neon)";
+            toggleBtn.innerText = "FIRST TIME? CREATE NEW ACCOUNT";
+        }
+    },
+
     async execute() {
         const u = document.getElementById('auth-u').value.toUpperCase().trim();
         const p = document.getElementById('auth-p').value.trim();
         if(!u || !p) return;
-        const s = await DB.ref('users/' + u).once('value');
-        let d = s.val();
-        if(d && d.banned === true) { alert("🛑 ACCESS REVOKED: THIS ACCOUNT HAS BEEN BANNED."); return; }
+
         const isBad = this.badWords.some(word => u.includes(word));
         if(isBad && u !== 'KING') { alert("⚠️ TERMINAL ACCESS DENIED: RESTRICTED USER ID"); return; }
-        if(!d) { d = { name: u, pass: p, gems: 500, rebirth: 0, timePlayed: 0, banned: false }; await DB.ref('users/' + u).set(d); }
-        if(d.pass === p) {
+
+        const s = await DB.ref('users/' + u).once('value');
+        let d = s.val();
+
+        if (this.isRegisterMode) {
+            // REGISTRATION MODE FOR FRESH USERS
+            if(d) { alert("❌ ACCOUNT ID UNVAILABLE. CHOOSE ANOTHER USER ID."); return; }
+            if(u === 'KING') { alert("❌ RESTRICTED CRITICAL SERVER TERMINAL ENTRY"); return; }
+            
+            d = { name: u, pass: p, gems: 500, rebirth: 0, timePlayed: 0, banned: false };
+            await DB.ref('users/' + u).set(d);
+            alert("✅ ACCOUNT PROVISIONED SUCCESSFUL! LOGGING IN...");
+            this.toggleMode(); // FLIP VIEW BACK TO INITIALIZATION STATE
+        }
+
+        // LOGIN ACCESS PROTOCOL
+        if(d && d.banned === true) { alert("🛑 ACCESS REVOKED: THIS ACCOUNT HAS BEEN BANNED."); return; }
+        if(d && d.pass === p) {
             document.getElementById('screen-auth').style.display='none';
             document.getElementById('hud').style.display='flex';
             if(u === 'KING' || d.isAdmin) document.getElementById('king-link').style.display='block';
             App.init(d); Router.go('core');
-        } else { alert("INVALID PASSCODE"); }
+        } else { alert("INVALID USER ID OR PASSCODE"); }
+    },
+
+    logout() {
+        if(confirm("ARE YOU SURE YOU WANT TO TERMINATE ACCESS?")) {
+            // SHUTDOWN ALL LIVE DATABASE SYNC HANDLERS
+            if(App.u) DB.ref('users/' + App.u).off();
+            if(App.boostInterval) clearInterval(App.boostInterval);
+
+            // CLEAR MEMORY CACHE ARCHITECTURES
+            App.u = null; App.gems = 0; App.rebirth = 0; App.correctStreak = 0; App.wrongStreak = 0;
+
+            // RESET LAYOUT INTERFACES
+            document.getElementById('hud').style.display = 'none';
+            document.getElementById('king-link').style.display = 'none';
+            document.getElementById('menu-overlay').style.display = 'none';
+            document.getElementById('auth-u').value = '';
+            document.getElementById('auth-p').value = '';
+            
+            if(this.isRegisterMode) this.toggleMode(); // FORCE NORMAL LOGIN STATE VIEW
+
+            document.querySelectorAll('.screen').forEach(x => x.style.display = 'none');
+            document.getElementById('screen-auth').style.display = 'flex';
+        }
     }
 };
 
@@ -274,16 +349,16 @@ const App = {
         this.lastQInfo = null; 
         this.wrongStreak = 0; 
         this.correctStreak = 0; 
-        this.pendingDailyGems = 0; // REWARD DATA STORAGE STATE
+        this.pendingDailyGems = 0; 
         this.pendingTrackerObject = null;
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
         this.checkDailyReward(); 
-        setInterval(() => { DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
+        if(this.playTimeInterval) clearInterval(this.playTimeInterval);
+        this.playTimeInterval = setInterval(() => { if(this.u) DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
     getTag(rb) { if(rb >= 20) return 'tag-gold'; if(rb >= 10) return 'tag-pink'; if(rb >= 5) return 'tag-neon'; return ''; },
     
-    // UPDATED INTERCEPT: FORCES A PHYSICAL POPUP CLAIM SCREEN ON REWARD ATTENDANCE EVENTS
     async checkDailyReward() {
         if(this.u === 'KING') return;
         const now = new Date();
@@ -311,13 +386,11 @@ const App = {
         this.pendingDailyGems = newStreak * 500;
         this.pendingTrackerObject = { lastLoginDate: todayStr, currentStreak: newStreak };
 
-        // FIRE OVERLAY MODAL UI DIRECTLY
         document.getElementById('popup-streak-title').innerText = `STREAK STAGE: DAY ${newStreak}`;
         document.getElementById('popup-reward-desc').innerText = `+${this.pendingDailyGems.toLocaleString()} GEMS READY`;
         document.getElementById('screen-daily-claim').style.display = 'flex';
     },
 
-    // RESOLVES REWARD PAYOUT FROM BUTTON ON THE NEW POPUP SCREEN
     async claimDailyGems() {
         this.gems += this.pendingDailyGems;
         await DB.ref(`users/${this.u}`).update({
@@ -613,13 +686,13 @@ const App = {
                     this.wrongStreak = 0; 
                     this.correctStreak += 1; 
                     confetti({ particleCount: 30 }); 
-                    DB.ref('users/' + this.u).update({ gems: this.gems }); 
+                    if(this.u) DB.ref('users/' + this.u).update({ gems: this.gems }); 
                     this.nextQ();
                 } else { 
                     this.gems = Math.max(0, this.gems - Math.floor(pot/2)); 
                     this.wrongStreak += 1; 
                     this.correctStreak = 0; 
-                    DB.ref('users/' + this.u).update({ gems: this.gems }); 
+                    if(this.u) DB.ref('users/' + this.u).update({ gems: this.gems }); 
                     alert(this.getMathHint(this.lastQInfo));
                     this.nextQ();
                 } 
