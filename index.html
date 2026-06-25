@@ -567,7 +567,7 @@ const App = {
         ];
 
         const roll = Math.random() * 100;
-        if(roll < 0.01) this.prize = pool[0];
+        if(roll < 0.001) this.prize = pool[0];
         else if(roll < 16.0) this.prize = pool[1];
         else if(roll < 46.0) this.prize = pool[2];
         else this.prize = pool[3];
