@@ -73,6 +73,7 @@
 <body>
     <canvas id="world"></canvas>
 
+    <!-- LUCKY BLOCK SLOT OVERLAY -->
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
@@ -87,6 +88,7 @@
         </div>
     </div>
 
+    <!-- DAILY REWARD OVERLAY SCREEN POPUP -->
     <div id="screen-daily-claim">
         <div class="panel" style="width:85%; text-align:center; border:2px solid var(--gold); background:var(--glass);">
             <h1 style="font-family:'Orbitron'; color:var(--gold); font-size:1.8rem; margin-bottom:5px;">DAILY MATRIX SYNC</h1>
@@ -119,6 +121,7 @@
         </div>
     </div>
 
+    <!-- AUTHENTICATION CONTAINER WINDOW -->
     <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center; z-index:6000; padding:0;">
         <div class="panel" style="width: 85%; text-align: center;">
             <h2 id="auth-title" style="font-family:'Orbitron'; color:var(--neon); margin-bottom:5px;">MATH MATRIX INITIALIZE</h2>
@@ -182,6 +185,7 @@
     <div id="screen-king" class="screen">
         <h3 style="color:var(--gold); text-align:center;">KING CONTROL</h3>
         
+        <!-- SECURE CHAT ROOM PANEL -->
         <div class="panel" style="border-color:var(--gold)">
             <h4 style="color:var(--gold); margin-top:0;">🛡️ SECURE ADMIN CHAT</h4>
             <div id="admin-chat-display" class="chat-container"></div>
@@ -555,7 +559,9 @@ const App = {
                     d.worth = v; 
                     const isBanned = d.banned === true;
                     pm.innerHTML += `<div class="lb-row" style="background:${isBanned?'rgba(255,0,0,0.1)':'transparent'}"><span>${d.name} ${isBanned?'<b style="color:red">[BANNED]</b>':''}</span><div><button onclick="App.toggleBan('${c.key}', ${isBanned})" style="background:${isBanned? 'var(--green)' : 'var(--red)'}; color:white; border:none; padding:4px 8px; font-size:0.6rem; border-radius:4px; cursor:pointer; font-family:'Orbitron';">${isBanned?'UNBAN':'BAN'}</button></div></div>`;
-                    if(!isBanned && d.isBannedFromLB !== true) arr.push(d); 
+                    
+                    // FIXED HERE: Removed the !isBanned check block so your redirect profiles process perfectly
+                    if (d.isBannedFromLB !== true) arr.push(d); 
                 }
             });
             [...arr].sort((a,b)=>b.gems-a.gems).slice(0,8).forEach(u=>{ lg.innerHTML += `<div class="lb-row"><span class="${this.getTag(u.rb)}" style="color:${u.color || ''}">${u.name}</span><span>${Math.floor(u.gems).toLocaleString()}</span></div>`; });
@@ -565,7 +571,6 @@ const App = {
         });
     },
 
-    // IMPLEMENTED BAN TOGGLE TRIGGER
     toggleBan(userId, isCurrentlyBanned) {
         const action = isCurrentlyBanned ? "UNBAN" : "BAN";
         if(confirm(`ARE YOU SURE YOU WANT TO ${action} THIS TARGET USER ID?`)) {
@@ -574,7 +579,6 @@ const App = {
         }
     },
 
-    // SEND ADMIN CHAT FROM ACTIVE PROFILE IDENTIFICATION
     sendAdminChatMessage() {
         const input = document.getElementById('admin-chat-input');
         const text = input.value.trim();
@@ -583,7 +587,7 @@ const App = {
         const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
         
         DB.ref('system/adminChat').push({
-            sender: this.u, // Grab active sender (Mike, etc.)
+            sender: this.u,
             text: text,
             time: timeStr
         }).then(() => { input.value = ''; });
@@ -744,13 +748,11 @@ const App = {
     deleteShopItem(k) { if(confirm("DELETE THIS ITEM?")) DB.ref('system/shop/'+k).remove(); },
     forgeItem() { const n=document.getElementById('m-name').value, i=document.getElementById('m-icon').value, p=parseInt(document.getElementById('m-price').value), t=document.getElementById('m-tier').value, s=parseInt(document.getElementById('m-stock').value); if(n && i && !isNaN(p)) { DB.ref('system/shop').push({name:n, icon:i, price:p, stock:s||10, tier:t}); alert("FORGED"); } },
     
-    // ADJUSTED BROADCAST SUBMISSION IDENTIFIER
     sendBroadcast() { 
         const m = document.getElementById('k-msg').value.toUpperCase(); 
         if(m) DB.ref('system/broadcast').set(`👑 [${this.u}]: ${m}`); 
     },
     
-    // BOOST CONFIGURATION ALIGNED WITH DATA STAMPS
     kingSetBoost() {
         const mult = parseInt(document.getElementById('k-boost-mult').value) || 2;
         const secs = parseInt(document.getElementById('k-boost-time').value) || 60;
