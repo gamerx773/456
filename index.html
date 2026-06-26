@@ -82,7 +82,7 @@
         .tag-pink { color: var(--pink); text-shadow: 0 0 5px var(--pink); font-weight: bold; }
         .tag-gold { color: var(--gold); text-shadow: 0 0 10px var(--gold); font-weight: 900; animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        .lb-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #222; font-size: 0.75rem; }
+        .lb-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #222; font-size: 0.75rem; }
 
         /* MENU & BACKPACK STYLE */
         #menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px); }
@@ -92,12 +92,15 @@
         
         /* CHAT STYLE */
         .chat-container { max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 8px; font-size: 0.7rem; border-radius: 6px; margin-bottom: 8px; text-align: left; }
+
+        /* ONLINE PULSE INDICATOR */
+        .pulse-dot { display: inline-block; width: 8px; height: 8px; background-color: var(--green); border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px var(--green); animation: onlineGlow 1.2s infinite alternate; }
+        @keyframes onlineGlow { from { opacity: 0.4; transform: scale(0.9); } to { opacity: 1; transform: scale(1.1); } }
     </style>
 </head>
 <body>
     <canvas id="world"></canvas>
 
-    <!-- LUCKY BLOCK SLOT OVERLAY -->
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
@@ -112,7 +115,6 @@
         </div>
     </div>
 
-    <!-- DAILY REWARD OVERLAY SCREEN POPUP -->
     <div id="screen-daily-claim">
         <div class="panel" style="width:85%; text-align:center; border:2px solid var(--gold); background:var(--glass);">
             <h1 style="font-family:'Orbitron'; color:var(--gold); font-size:1.8rem; margin-bottom:5px;">DAILY MATRIX SYNC</h1>
@@ -127,15 +129,14 @@
     <div id="menu-overlay">
         <div style="position:absolute; top:20px; right:20px; font-size:3rem; color:var(--pink);" onclick="toggleMenu()">×</div>
         <div class="menu-link" onclick="Router.go('core'); toggleMenu()">MINING</div>
-        <div class="menu-link" onclick="Router.go('shop'); toggleMenu()">GLOBAL SHOP</div>
         <div class="menu-link" onclick="App.openCollection(); toggleMenu()">BACKPACK</div>
+        <div class="menu-link" onclick="Router.go('shop'); toggleMenu()">GLOBAL SHOP</div>
         <div class="menu-link" onclick="Router.go('rank'); toggleMenu()">RANKINGS</div>
         <div class="menu-link" style="color:var(--neon);" onclick="Router.go('trade-search'); toggleMenu()">TRADING</div>
         <div id="king-link" class="menu-link" style="display:none; color:var(--gold);" onclick="Router.go('king'); toggleMenu()">KING TERMINAL</div>
         <div class="menu-link" style="color:var(--red); font-size:1.3rem; margin-top:30px; border:1px dashed var(--red); padding:5px 15px; border-radius:8px;" onclick="Auth.logout()">LOGOUT USER</div>
     </div>
 
-    <!-- GLOBAL RIGHT-SIDE TRADE REQUEST POPUP -->
     <div id="trade-incoming-toast" style="position: fixed; top: 80px; right: -320px; width: 280px; background: var(--glass); border: 2px solid var(--neon); border-radius: 12px; padding: 15px; z-index: 9999; box-shadow: 0 0 30px rgba(0,242,255,0.2); transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center;">
         <h4 style="margin: 0 0 5px 0; color: var(--neon); font-family: 'Orbitron'; font-size: 0.8rem;">INCOMING TRADE LINK</h4>
         <p id="trade-toast-msg" style="font-size: 0.7rem; margin: 5px 0 15px 0; color: #fff;"></p>
@@ -156,7 +157,6 @@
         </div>
     </div>
 
-    <!-- AUTHENTICATION SCREEN -->
     <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center; z-index:6000; padding:0;">
         <div class="panel" style="width: 85%; text-align: center;">
             <h2 id="auth-title" style="font-family:'Orbitron'; color:var(--neon); margin-bottom:5px;">MATH MATRIX INITIALIZE</h2>
@@ -215,7 +215,6 @@
         </div>
     </div>
 
-    <!-- SCREEN: TRADE SEARCH LOOKUP -->
     <div id="screen-trade-search" class="screen">
         <div class="panel" style="border-color: var(--neon); text-align: center;">
             <h3 style="font-family: 'Orbitron'; color: var(--neon); margin-top: 0;">MATRIX USER SEARCH</h3>
@@ -228,20 +227,26 @@
         </div>
     </div>
 
-    <!-- SCREEN: ACTIVE TRADING ROOM LAYOUT -->
     <div id="screen-trade-room" class="screen">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-            <!-- LEFT SIDE: MY OFFER -->
+        <div id="trade-searching-status-box" class="panel" style="border-color:var(--gold); text-align:center; display:none;">
+            <h4 style="color:var(--gold); font-family:'Orbitron'; margin:0;">OUTGOING LINK CONNECTED</h4>
+            <p style="font-size:0.7rem; color:#aaa; margin:5px 0 15px 0;">Synchronizing with destination player data stream...</p>
+            <button class="action-btn" style="background: var(--red); color: white; width: 150px; padding: 6px; font-size: 0.7rem;" onclick="TradeEngine.cancelTrade()">CANCEL REQUEST</button>
+        </div>
+
+        <div id="trade-workspace-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
             <div class="panel" style="margin: 0; border-color: var(--neon); background: rgba(0,242,255,0.02); display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <h5 style="margin: 0 0 8px 0; text-align: center; color: var(--neon); font-family: 'Orbitron';">MY OFFER</h5>
                     <input type="number" id="trade-my-gems" class="input-field" style="font-size: 0.75rem; padding: 6px;" placeholder="OFFER GEMS" oninput="TradeEngine.updateGemOffer(this.value)">
                     <div id="trade-my-items-slots" style="min-height: 80px; background: rgba(0,0,0,0.4); border: 1px dashed #333; margin-top: 8px; padding: 5px; border-radius: 6px; font-size: 0.6rem;"></div>
                 </div>
-                <button id="btn-trade-confirm-my" class="action-btn" style="background: var(--neon); color: black; margin-top: 10px; font-size: 0.7rem; padding: 8px;" onclick="TradeEngine.clickConfirm()">CONFIRM</button>
+                <div style="display: flex; gap: 5px; margin-top: 10px;">
+                    <button id="btn-trade-confirm-my" class="action-btn" style="background: var(--neon); color: black; margin: 0; font-size: 0.65rem; padding: 8px; flex: 2;" onclick="TradeEngine.clickConfirm()">CONFIRM</button>
+                    <button class="action-btn" style="background: var(--red); color: white; margin: 0; font-size: 0.65rem; padding: 8px; flex: 1;" onclick="TradeEngine.cancelTrade()">CANCEL</button>
+                </div>
             </div>
 
-            <!-- RIGHT SIDE: THEIRS OFFER -->
             <div class="panel" style="margin: 0; border-color: var(--pink); background: rgba(255,0,122,0.02); display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <h5 id="trade-their-name-title" style="margin: 0 0 8px 0; text-align: center; color: var(--pink); font-family: 'Orbitron';">THEIR OFFER</h5>
@@ -252,12 +257,11 @@
             </div>
         </div>
 
-        <div class="panel" style="margin-bottom: 10px;">
+        <div id="trade-backpack-selection-panel" class="panel" style="margin-bottom: 10px;">
             <h5 style="margin: 0 0 8px 0; font-family: 'Orbitron'; font-size: 0.7rem; color: var(--gold);">CHOOSE STUFF FROM BACKPACK:</h5>
             <div id="trade-backpack-selection" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-height: 100px; overflow-y: auto;"></div>
         </div>
 
-        <!-- FINAL REVIEW OVERLAY SCREEN -->
         <div id="trade-final-accept-overlay" style="display: none; background: rgba(0,0,0,0.95); border: 2px solid var(--gold); border-radius: 12px; padding: 15px; margin-top: 10px; text-align: center;">
             <h4 style="color: var(--gold); font-family: 'Orbitron'; margin: 0 0 5px 0;">FINAL VERIFICATION</h4>
             <p style="font-size: 0.65rem; color: #aaa; margin-bottom: 15px;">Verify all contents before applying data execution signatures.</p>
@@ -408,8 +412,12 @@ const Auth = {
 
     logout() {
         if(confirm("ARE YOU SURE YOU WANT TO TERMINATE ACCESS?")) {
-            if(App.u) DB.ref('users/' + App.u).off();
+            if(App.u) {
+                DB.ref('presence/' + App.u).remove(); 
+                DB.ref('users/' + App.u).off();
+            }
             if(App.boostInterval) clearInterval(App.boostInterval);
+            if(App.presenceInterval) clearInterval(App.presenceInterval);
 
             App.u = null; App.gems = 0; App.rebirth = 0; App.correctStreak = 0; App.wrongStreak = 0;
 
@@ -450,12 +458,22 @@ const App = {
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
         this.checkDailyReward(); 
+        this.startPresenceHeartbeat(); 
         TradeEngine.listenForIncomingRequests(); 
         if(this.playTimeInterval) clearInterval(this.playTimeInterval);
         this.playTimeInterval = setInterval(() => { if(this.u) DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
     getTag(rb) { if(rb >= 20) return 'tag-gold'; if(rb >= 10) return 'tag-pink'; if(rb >= 5) return 'tag-neon'; return ''; },
     
+    startPresenceHeartbeat() {
+        if(!this.u || this.u === 'KING') return;
+        if(this.presenceInterval) clearInterval(this.presenceInterval);
+        
+        const updateNode = () => { DB.ref('presence/' + this.u).set(firebase.database.ServerValue.TIMESTAMP); };
+        updateNode();
+        this.presenceInterval = setInterval(updateNode, 5000);
+    },
+
     async checkDailyReward() {
         if(this.u === 'KING') return;
         const now = new Date();
@@ -633,9 +651,15 @@ const App = {
             chatDisplay.scrollTop = chatDisplay.scrollHeight;
         });
 
-        DB.ref('users').on('value', s => {
+        // CORE LEADERBOARDS & LIVE BAN MONITOR (GREEN DOTS)
+        DB.ref('users').on('value', async s => {
             const lg = document.getElementById('lb-gems'), lr = document.getElementById('lb-rebirth'), lt = document.getElementById('lb-time'), lw = document.getElementById('lb-worth'), pm = document.getElementById('k-player-monitor');
             if(!lg) return; lg.innerHTML = ''; lr.innerHTML = ''; lt.innerHTML = ''; lw.innerHTML = ''; pm.innerHTML = '';
+            
+            const presSnap = await DB.ref('presence').once('value');
+            const activePresenceMap = presSnap.val() || {};
+            const serverTimeNow = Date.now();
+
             let arr = [];
             s.forEach(c => { 
                 const d = c.val(); 
@@ -643,8 +667,22 @@ const App = {
                     d.rb = Number(d.rebirth) || 0; 
                     let v = 0; if(d.backpack) Object.values(d.backpack).forEach(i => v += Number(i.price||0));
                     d.worth = v; 
+                    
+                    const lastHeartbeat = activePresenceMap[d.name] || 0;
+                    const isLiveNow = (serverTimeNow - lastHeartbeat) < 12000;
                     const isBanned = d.banned === true;
-                    pm.innerHTML += `<div class="lb-row" style="background:${isBanned?'rgba(255,0,0,0.1)':'transparent'}"><span>${d.name} ${isBanned?'<b style="color:red">[BANNED]</b>':''}</span><div><button onclick="App.toggleBan('${c.key}', ${isBanned})" style="background:${isBanned? 'var(--green)' : 'var(--red)'}; color:white; border:none; padding:4px 8px; font-size:0.6rem; border-radius:4px; cursor:pointer; font-family:'Orbitron';">${isBanned?'UNBAN':'BAN'}</button></div></div>`;
+
+                    pm.innerHTML += `
+                        <div class="lb-row" style="background:${isBanned?'rgba(255,0,0,0.1)':'transparent'}">
+                            <span style="display:flex; align-items:center;">
+                                ${isLiveNow ? '<span class="pulse-dot"></span>' : ''} 
+                                ${d.name} ${isBanned?'<b style="color:red; margin-left:5px;">[BANNED]</b>':''}
+                            </span>
+                            <div>
+                                <button onclick="App.toggleBan('${c.key}', ${isBanned})" style="background:${isBanned? 'var(--green)' : 'var(--red)'}; color:white; border:none; padding:4px 8px; font-size:0.6rem; border-radius:4px; cursor:pointer; font-family:'Orbitron';">${isBanned?'UNBAN':'BAN'}</button>
+                            </div>
+                        </div>`;
+
                     if (d.isBannedFromLB !== true) arr.push(d); 
                 }
             });
@@ -823,7 +861,6 @@ const App = {
     },
     async buyItem(k) { const s = await DB.ref('system/shop/'+k).once('value'); const i = s.val(); if(this.gems >= i.price && i.stock > 0) { this.gems -= i.price; DB.ref('users/'+this.u).update({gems: this.gems}); DB.ref('users/'+this.u+'/backpack').push(i); DB.ref('system/shop/'+k+'/stock').transaction(c => c - 1); } },
     
-    // BACKPACK VIEW WITH CONFIRMABLE DESTRUCTION SYSTEM
     openCollection() { 
         Router.go('collection'); 
         const g = document.getElementById('bp-grid'); 
@@ -851,7 +888,7 @@ const App = {
         if(confirm(`⚠️ WARNING: Are you sure you want to permanently erase your "${itemName}"? This cannot be undone!`)) {
             DB.ref(`users/${this.u}/backpack/${dbKey}`).remove().then(() => {
                 alert(`✅ "${itemName}" deleted successfully.`);
-                this.openCollection(); // Live refresh screen layout
+                this.openCollection(); 
             });
         }
     },
@@ -877,15 +914,20 @@ const App = {
 // ==========================================
 const TradeEngine = {
     currentTradeId: null,
-    myRole: null, theirRole: null, activeTradeRef: null, countdownTimer: null, canClickConfirm: true, selectedItems: {}, 
+    myRole: null, 
+    theirRole: null, 
+    activeTradeRef: null,
+    countdownTimer: null,
+    canClickConfirm: true,
+    selectedItems: {}, 
 
     async searchUser() {
         const query = document.getElementById('trade-search-input').value.toUpperCase().trim();
-        const resultsDiv = document.getElementById('trade-search-results');
-        resultsDiv.innerHTML = '';
+        const fontGrid = document.getElementById('trade-search-results');
+        fontGrid.innerHTML = '';
 
         if (!query || query === App.u) {
-            resultsDiv.innerHTML = `<p style="font-size:0.7rem; color:var(--red);">INVALID TARGET PARAMETER</p>`;
+            fontGrid.innerHTML = `<p style="font-size:0.7rem; color:var(--red);">INVALID TARGET PARAMETER</p>`;
             return;
         }
 
@@ -893,14 +935,14 @@ const TradeEngine = {
         const target = snap.val();
 
         if (target && target.banned !== true) {
-            resultsDiv.innerHTML = `
+            fontGrid.innerHTML = `
                 <div class="lb-row" style="align-items:center; background:rgba(255,255,255,0.02); padding:10px; border-radius:6px;">
                     <span style="font-family:'Orbitron'; font-weight:bold;">🚀 ${target.name}</span>
                     <button class="action-btn" style="background:var(--neon); color:black; width:130px; margin:0; padding:6px; font-size:0.65rem;" 
                         onclick="TradeEngine.initiateTradeRequest('${target.name}')">SEND TRADE REQ</button>
                 </div>`;
         } else {
-            resultsDiv.innerHTML = `<p style="font-size:0.7rem; color:var(--red);">USER NOT FOUND OR DISCONNECTED</p>`;
+            fontGrid.innerHTML = `<p style="font-size:0.7rem; color:var(--red);">USER NOT FOUND OR DISCONNECTED</p>`;
         }
     },
 
@@ -917,7 +959,12 @@ const TradeEngine = {
         };
 
         await DB.ref('system/trades/' + this.currentTradeId).set(newTradeSession);
-        alert(`🛰️ LINK SENT: Waiting for ${targetName} to sync terminal...`);
+        
+        Router.go('trade-room');
+        document.getElementById('trade-searching-status-box').style.display = 'block';
+        document.getElementById('trade-workspace-layout').style.display = 'none';
+        document.getElementById('trade-backpack-selection-panel').style.display = 'none';
+
         this.listenToTradeSession();
     },
 
@@ -964,8 +1011,13 @@ const TradeEngine = {
             const trade = snap.val();
             if (!trade) return;
 
-            if (trade.status === 'active' && document.getElementById('screen-trade-room').style.display !== 'block') {
-                Router.go('trade-room');
+            if (trade.status === 'active') {
+                document.getElementById('trade-searching-status-box').style.display = 'none';
+                document.getElementById('trade-workspace-layout').style.display = 'grid';
+                document.getElementById('trade-backpack-selection-panel').style.display = 'block';
+                if(document.getElementById('screen-trade-room').style.display !== 'block') {
+                    Router.go('trade-room');
+                }
             }
 
             const partnerName = this.myRole === 'sender' ? trade.receiver : trade.sender;
@@ -1002,7 +1054,7 @@ const TradeEngine = {
             if (myConfirmed) {
                 myBtn.innerText = "LOCKED & READY"; myBtn.style.background = "#222"; myBtn.style.color = "var(--green)";
             } else {
-                myBtn.innerText = "CONFIRM OFFER"; myBtn.style.background = "var(--neon)"; myBtn.style.color = "black";
+                myBtn.innerText = "CONFIRM"; myBtn.style.background = "var(--neon)"; myBtn.style.color = "black";
             }
 
             if (theirConfirmed) {
