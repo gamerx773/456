@@ -446,6 +446,7 @@ const Router = {
 };
 
 const App = {
+    activePresence: {},
     init(d) {
         this.u = d.name; this.gems = d.gems; this.rebirth = Number(d.rebirth) || 0; this.grade = 50; this.shopTab = 'normal';
         this.boostActive = false; this.boostMultiplier = 1;
@@ -609,6 +610,11 @@ const App = {
             if(v.color) document.documentElement.style.setProperty('--neon', v.color);
         });
 
+        // LIVE SEPARATE STREAM FOR RECURSION-FREE PRESENCE MAPS
+        DB.ref('presence').on('value', snap => {
+            this.activePresence = snap.val() || {};
+        });
+
         // BOOST AND BROADCAST LIVE SYNC
         DB.ref('system/boost').on('value', s => {
             const data = s.val() || { end: 0, mult: 1 };
@@ -651,15 +657,12 @@ const App = {
             chatDisplay.scrollTop = chatDisplay.scrollHeight;
         });
 
-        // CORE LEADERBOARDS & LIVE BAN MONITOR (GREEN DOTS)
-        DB.ref('users').on('value', async s => {
+        // CORE LEADERBOARDS & FIXED LIVE BAN MONITOR
+        DB.ref('users').on('value', s => {
             const lg = document.getElementById('lb-gems'), lr = document.getElementById('lb-rebirth'), lt = document.getElementById('lb-time'), lw = document.getElementById('lb-worth'), pm = document.getElementById('k-player-monitor');
             if(!lg) return; lg.innerHTML = ''; lr.innerHTML = ''; lt.innerHTML = ''; lw.innerHTML = ''; pm.innerHTML = '';
             
-            const presSnap = await DB.ref('presence').once('value');
-            const activePresenceMap = presSnap.val() || {};
             const serverTimeNow = Date.now();
-
             let arr = [];
             s.forEach(c => { 
                 const d = c.val(); 
@@ -668,7 +671,7 @@ const App = {
                     let v = 0; if(d.backpack) Object.values(d.backpack).forEach(i => v += Number(i.price||0));
                     d.worth = v; 
                     
-                    const lastHeartbeat = activePresenceMap[d.name] || 0;
+                    const lastHeartbeat = App.activePresence[d.name] || 0;
                     const isLiveNow = (serverTimeNow - lastHeartbeat) < 12000;
                     const isBanned = d.banned === true;
 
@@ -981,9 +984,6 @@ const TradeEngine = {
                     document.getElementById('trade-toast-msg').innerText = `${trade.sender} wants to trade assets with you!`;
                     document.getElementById('trade-incoming-toast').style.right = '20px';
                 }
-                if (this.currentTradeId && child.key === this.currentTradeId && trade.status === 'cancelled') {
-                    this.exitTradeRoom("Trade structural interface disconnected by partner.");
-                }
             });
         });
     },
@@ -1009,7 +1009,12 @@ const TradeEngine = {
         this.activeTradeRef = DB.ref('system/trades/' + this.currentTradeId);
         this.activeTradeRef.on('value', snap => {
             const trade = snap.val();
-            if (!trade) return;
+            
+            // CRITICAL SYNC RE-ROUTING IF SESSION IS TERMINATED BY PARTNER
+            if (!trade || trade.status === 'cancelled') {
+                this.exitTradeRoom("Trade structural interface disconnected by partner.");
+                return;
+            }
 
             if (trade.status === 'active') {
                 document.getElementById('trade-searching-status-box').style.display = 'none';
@@ -1208,13 +1213,23 @@ const TradeEngine = {
     async cancelTrade() {
         if (!this.currentTradeId) return;
         if (this.countdownTimer) clearInterval(this.countdownTimer);
+        
+        // Update database node status to cancel to trigger partner's listener escape gate
         await DB.ref(`system/trades/${this.currentTradeId}`).update({ status: 'cancelled' });
+        
+        // Immediately kick yourself back to game dashboard screen interface
+        this.exitTradeRoom("Trade session cancelled successfully.");
     },
 
     exitTradeRoom(msg) {
         if (this.countdownTimer) clearInterval(this.countdownTimer);
         if (this.activeTradeRef) this.activeTradeRef.off();
-        DB.ref('system/trades/' + this.currentTradeId).remove();
+        
+        // Remove node path cleanly
+        if (this.currentTradeId) {
+            DB.ref('system/trades/' + this.currentTradeId).remove();
+        }
+        
         alert(msg);
         this.currentTradeId = null; this.selectedItems = {}; this.canClickConfirm = true;
         document.getElementById('trade-my-gems').value = '';
