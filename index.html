@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght=700;900&family=JetBrains+Mono&display=swap');
         :root { --neon: #00f2ff; --pink: #ff007a; --gold: #f1c40f; --bg: #000; --glass: rgba(15, 15, 30, 0.96); --red: #ff3e3e; --green: #2ecc71; --orange: #ff9f43; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: white; font-family: 'JetBrains Mono', monospace; }
@@ -66,14 +66,13 @@
         .bp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .bp-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
         
-        /* CHAT STYLE */
+        /* CHAT & TRADING STYLE */
         .chat-container { max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 8px; font-size: 0.7rem; border-radius: 6px; margin-bottom: 8px; text-align: left; }
     </style>
 </head>
 <body>
     <canvas id="world"></canvas>
 
-    <!-- LUCKY BLOCK SLOT OVERLAY -->
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
@@ -88,7 +87,6 @@
         </div>
     </div>
 
-    <!-- DAILY REWARD OVERLAY SCREEN POPUP -->
     <div id="screen-daily-claim">
         <div class="panel" style="width:85%; text-align:center; border:2px solid var(--gold); background:var(--glass);">
             <h1 style="font-family:'Orbitron'; color:var(--gold); font-size:1.8rem; margin-bottom:5px;">DAILY MATRIX SYNC</h1>
@@ -106,8 +104,18 @@
         <div class="menu-link" onclick="Router.go('shop'); toggleMenu()">GLOBAL SHOP</div>
         <div class="menu-link" onclick="App.openCollection(); toggleMenu()">BACKPACK</div>
         <div class="menu-link" onclick="Router.go('rank'); toggleMenu()">RANKINGS</div>
+        <div class="menu-link" style="color:var(--neon);" onclick="Router.go('trade-search'); toggleMenu()">TRADING</div>
         <div id="king-link" class="menu-link" style="display:none; color:var(--gold);" onclick="Router.go('king'); toggleMenu()">KING TERMINAL</div>
         <div class="menu-link" style="color:var(--red); font-size:1.3rem; margin-top:30px; border:1px dashed var(--red); padding:5px 15px; border-radius:8px;" onclick="Auth.logout()">LOGOUT USER</div>
+    </div>
+
+    <div id="trade-incoming-toast" style="position: fixed; top: 80px; right: -320px; width: 280px; background: var(--glass); border: 2px solid var(--neon); border-radius: 12px; padding: 15px; z-index: 9999; box-shadow: 0 0 30px rgba(0,242,255,0.2); transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center;">
+        <h4 style="margin: 0 0 5px 0; color: var(--neon); font-family: 'Orbitron'; font-size: 0.8rem;">INCOMING TRADE LINK</h4>
+        <p id="trade-toast-msg" style="font-size: 0.7rem; margin: 5px 0 15px 0; color: #fff;"></p>
+        <div style="display: flex; gap: 8px;">
+            <button class="action-btn" style="background: var(--green); color: black; margin: 0; padding: 6px;" onclick="TradeEngine.acceptIncomingRequest()">ACCEPT</button>
+            <button class="action-btn" style="background: var(--red); color: white; margin: 0; padding: 6px;" onclick="TradeEngine.declineIncomingRequest()">DECLINE</button>
+        </div>
     </div>
 
     <div id="hud">
@@ -121,7 +129,6 @@
         </div>
     </div>
 
-    <!-- AUTHENTICATION CONTAINER WINDOW -->
     <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center; z-index:6000; padding:0;">
         <div class="panel" style="width: 85%; text-align: center;">
             <h2 id="auth-title" style="font-family:'Orbitron'; color:var(--neon); margin-bottom:5px;">MATH MATRIX INITIALIZE</h2>
@@ -144,9 +151,7 @@
             <div id="gp-250" class="grade-pill" onclick="App.setGrade(250)">8-12</div>
             <div id="gp-400" class="grade-pill" onclick="App.setGrade(400)">ADULT</div>
         </div>
-
         <div id="streak-ticker">STREAK: 0</div>
-
         <div id="q-text">...</div>
         <div id="opt-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
     </div>
@@ -182,10 +187,57 @@
         </div>
     </div>
 
+    <div id="screen-trade-search" class="screen">
+        <div class="panel" style="border-color: var(--neon); text-align: center;">
+            <h3 style="font-family: 'Orbitron'; color: var(--neon); margin-top: 0;">MATRIX USER SEARCH</h3>
+            <p style="font-size: 0.7rem; color: #888; margin-bottom: 15px;">Search any player's user ID to link a trade session</p>
+            <div style="display: flex; gap: 5px; margin-bottom: 20px;">
+                <input type="text" id="trade-search-input" class="input-field" style="margin: 0; text-align: left;" placeholder="SEARCH USERNAME...">
+                <button class="action-btn" style="background: var(--neon); color: black; width: 80px; margin: 0;" onclick="TradeEngine.searchUser()">SEARCH</button>
+            </div>
+            <div id="trade-search-results" style="min-height: 50px;"></div>
+        </div>
+    </div>
+
+    <div id="screen-trade-room" class="screen" style="padding-top: 100px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+            <div class="panel" style="margin: 0; border-color: var(--neon); background: rgba(0,242,255,0.02); display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h5 style="margin: 0 0 8px 0; text-align: center; color: var(--neon); font-family: 'Orbitron';">MY OFFER</h5>
+                    <input type="number" id="trade-my-gems" class="input-field" style="font-size: 0.75rem; padding: 6px;" placeholder="OFFER GEMS" oninput="TradeEngine.updateGemOffer(this.value)">
+                    <div id="trade-my-items-slots" style="min-height: 80px; background: rgba(0,0,0,0.4); border: 1px dashed #333; margin-top: 8px; padding: 5px; border-radius: 6px; font-size: 0.6rem;"></div>
+                </div>
+                <button id="btn-trade-confirm-my" class="action-btn" style="background: var(--neon); color: black; margin-top: 10px; font-size: 0.7rem; padding: 8px;" onclick="TradeEngine.clickConfirm()">CONFIRM</button>
+            </div>
+
+            <div class="panel" style="margin: 0; border-color: var(--pink); background: rgba(255,0,122,0.02); display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h5 id="trade-their-name-title" style="margin: 0 0 8px 0; text-align: center; color: var(--pink); font-family: 'Orbitron';">THEIR OFFER</h5>
+                    <div id="trade-their-gems-display" style="text-align: center; color: var(--gold); font-size: 0.85rem; font-family: 'Orbitron'; font-weight: bold; padding: 8px 0;">💎 0</div>
+                    <div id="trade-their-items-slots" style="min-height: 80px; background: rgba(0,0,0,0.4); border: 1px dashed #333; padding: 5px; border-radius: 6px; font-size: 0.6rem;"></div>
+                </div>
+                <button id="btn-trade-confirm-their" class="action-btn" style="background: #222; color: #555; margin-top: 10px; font-size: 0.7rem; padding: 8px; pointer-events: none;">WAITING...</button>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-bottom: 10px;">
+            <h5 style="margin: 0 0 8px 0; font-family: 'Orbitron'; font-size: 0.7rem; color: var(--gold);">CHOOSE STUFF FROM BACKPACK:</h5>
+            <div id="trade-backpack-selection" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-height: 100px; overflow-y: auto;"></div>
+        </div>
+
+        <div id="trade-final-accept-overlay" style="display: none; background: rgba(0,0,0,0.95); border: 2px solid var(--gold); border-radius: 12px; padding: 15px; margin-top: 10px; text-align: center;">
+            <h4 style="color: var(--gold); font-family: 'Orbitron'; margin: 0 0 5px 0;">FINAL VERIFICATION</h4>
+            <p style="font-size: 0.65rem; color: #aaa; margin-bottom: 15px;">Verify all contents before applying data execution signatures.</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button id="btn-final-accept" class="action-btn" style="background: var(--gold); color: black; margin: 0;" onclick="TradeEngine.clickFinalAccept()">ACCEPT TRADE</button>
+                <button class="action-btn" style="background: var(--red); color: white; margin: 0;" onclick="TradeEngine.cancelTrade()">ABORT</button>
+            </div>
+            <div id="trade-final-status-msg" style="font-size: 0.6rem; color: var(--neon); margin-top: 10px;"></div>
+        </div>
+    </div>
+
     <div id="screen-king" class="screen">
         <h3 style="color:var(--gold); text-align:center;">KING CONTROL</h3>
-        
-        <!-- SECURE CHAT ROOM PANEL -->
         <div class="panel" style="border-color:var(--gold)">
             <h4 style="color:var(--gold); margin-top:0;">🛡️ SECURE ADMIN CHAT</h4>
             <div id="admin-chat-display" class="chat-container"></div>
@@ -194,7 +246,6 @@
                 <button class="action-btn" style="background:var(--gold); color:black; width:80px; margin:0;" onclick="App.sendAdminChatMessage()">SEND</button>
             </div>
         </div>
-
         <div class="panel" style="border-color:var(--red)">
             <h4 style="color:var(--red); margin-top:0;">📡 LIVE PLAYER MONITOR / BAN</h4>
             <div id="k-player-monitor" style="max-height: 250px; overflow-y: auto; font-size: 0.65rem;"></div>
@@ -349,6 +400,7 @@ const Router = {
         document.getElementById('screen-'+s).style.display = (s==='core'?'flex':'block');
         if(s==='shop') App.drawShop();
         if(s==='king') App.drawKingTools();
+        if(s==='trade-search') document.getElementById('trade-search-results').innerHTML = '';
     }
 };
 
@@ -365,6 +417,7 @@ const App = {
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
         this.checkDailyReward(); 
+        TradeEngine.listenForIncomingRequests(); // Live trade hook
         if(this.playTimeInterval) clearInterval(this.playTimeInterval);
         this.playTimeInterval = setInterval(() => { if(this.u) DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
@@ -505,7 +558,7 @@ const App = {
             if(v.color) document.documentElement.style.setProperty('--neon', v.color);
         });
 
-        // LIVE BOOST AND BRODCAST SYNC
+        // LIVE BOOST BANNER SYNC
         DB.ref('system/boost').on('value', s => {
             const data = s.val() || { end: 0, mult: 1 };
             if(this.boostInterval) clearInterval(this.boostInterval);
@@ -757,7 +810,329 @@ const App = {
     animate() { requestAnimationFrame(()=>this.animate()); if(this.mesh) { this.mesh.rotation.y += 0.005; } this.renderer.render(this.scene, this.camera); }
 };
 
-// AUTOMATIC URL SESSION INJECTION LISTENER
+// ==========================================
+// REALTIME MULTI-STAGE TRADING CONGRUENCE ENGINE
+// ==========================================
+const TradeEngine = {
+    currentTradeId: null,
+    myRole: null, 
+    theirRole: null, 
+    activeTradeRef: null,
+    countdownTimer: null,
+    canClickConfirm: true,
+    selectedItems: {}, 
+
+    async searchUser() {
+        const query = document.getElementById('trade-search-input').value.toUpperCase().trim();
+        const resultsDiv = document.getElementById('trade-search-results');
+        resultsDiv.innerHTML = '';
+
+        if (!query || query === App.u) {
+            resultsDiv.innerHTML = `<p style="font-size:0.7rem; color:var(--red);">INVALID TARGET PARAMETER</p>`;
+            return;
+        }
+
+        const snap = await DB.ref('users/' + query).once('value');
+        const target = snap.val();
+
+        if (target && target.banned !== true) {
+            resultsDiv.innerHTML = `
+                <div class="lb-row" style="align-items:center; background:rgba(255,255,255,0.02); padding:10px; border-radius:6px;">
+                    <span style="font-family:'Orbitron'; font-weight:bold;">🚀 ${target.name}</span>
+                    <button class="action-btn" style="background:var(--neon); color:black; width:130px; margin:0; padding:6px; font-size:0.65rem;" 
+                        onclick="TradeEngine.initiateTradeRequest('${target.name}')">SEND TRADE REQ</button>
+                </div>`;
+        } else {
+            resultsDiv.innerHTML = `<p style="font-size:0.7rem; color:var(--red);">USER NOT FOUND OR DISCONNECTED</p>`;
+        }
+    },
+
+    async initiateTradeRequest(targetName) {
+        this.currentTradeId = `TRADE_${App.u}_${targetName}`;
+        this.myRole = 'sender';
+        this.theirRole = 'receiver';
+
+        const newTradeSession = {
+            sender: App.u,
+            receiver: targetName,
+            status: 'pending',
+            senderOffer: { gems: 0, items: {} },
+            receiverOffer: { gems: 0, items: {} },
+            senderConfirmed: false,
+            receiverConfirmed: false,
+            senderFinalAccept: false,
+            receiverFinalAccept: false,
+            lastUpdatedBy: App.u
+        };
+
+        await DB.ref('system/trades/' + this.currentTradeId).set(newTradeSession);
+        alert(`🛰️ LINK SENT: Waiting for ${targetName} to sync terminal...`);
+        this.listenToTradeSession();
+    },
+
+    listenForIncomingRequests() {
+        if (!App.u || App.u === 'KING') return;
+
+        DB.ref('system/trades').on('value', snap => {
+            if (!snap.exists()) return;
+            snap.forEach(child => {
+                const trade = child.val();
+                if (trade.receiver === App.u && trade.status === 'pending') {
+                    this.currentTradeId = child.key;
+                    this.myRole = 'receiver';
+                    this.theirRole = 'sender';
+                    document.getElementById('trade-toast-msg').innerText = `${trade.sender} wants to trade assets with you!`;
+                    document.getElementById('trade-incoming-toast').style.right = '20px';
+                }
+                if (this.currentTradeId && child.key === this.currentTradeId && trade.status === 'cancelled') {
+                    this.exitTradeRoom("Trade structural interface disconnected by partner.");
+                }
+            });
+        });
+    },
+
+    async acceptIncomingRequest() {
+        document.getElementById('trade-incoming-toast').style.right = '-320px';
+        if (!this.currentTradeId) return;
+        await DB.ref(`system/trades/${this.currentTradeId}`).update({ status: 'active' });
+        this.listenToTradeSession();
+        Router.go('trade-room');
+    },
+
+    async declineIncomingRequest() {
+        document.getElementById('trade-incoming-toast').style.right = '-320px';
+        if (!this.currentTradeId) return;
+        await DB.ref(`system/trades/${this.currentTradeId}`).remove();
+        this.currentTradeId = null;
+    },
+
+    listenToTradeSession() {
+        if (this.activeTradeRef) this.activeTradeRef.off();
+
+        this.activeTradeRef = DB.ref('system/trades/' + this.currentTradeId);
+        this.activeTradeRef.on('value', snap => {
+            const trade = snap.val();
+            if (!trade) return;
+
+            if (trade.status === 'active' && document.getElementById('screen-trade-room').style.display !== 'block') {
+                Router.go('trade-room');
+            }
+
+            const partnerName = this.myRole === 'sender' ? trade.receiver : trade.sender;
+            document.getElementById('trade-their-name-title').innerText = `${partnerName}'S OFFER`;
+
+            const myData = this.myRole === 'sender' ? trade.senderOffer : trade.receiverOffer;
+            const theirData = this.theirRole === 'sender' ? trade.senderOffer : trade.receiverOffer;
+
+            const myConfirmed = this.myRole === 'sender' ? trade.senderConfirmed : trade.receiverConfirmed;
+            const theirConfirmed = this.theirRole === 'sender' ? trade.senderConfirmed : trade.receiverConfirmed;
+
+            document.getElementById('trade-their-gems-display').innerText = `💎 ${(theirData.gems || 0).toLocaleString()}`;
+            
+            const theirItemsDiv = document.getElementById('trade-their-items-slots');
+            theirItemsDiv.innerHTML = '';
+            if (theirData.items) {
+                Object.values(theirData.items).forEach(item => {
+                    theirItemsDiv.innerHTML += `<span style="background:rgba(255,255,255,0.05); padding:3px 6px; margin:2px; display:inline-block; border-radius:4px; border:1px solid var(--pink);">${item.icon} ${item.name}</span>`;
+                });
+            } else { theirItemsDiv.innerText = "NO ITEMS SELECTED"; }
+
+            const myItemsDiv = document.getElementById('trade-my-items-slots');
+            myItemsDiv.innerHTML = '';
+            if (myData.items) {
+                Object.keys(myData.items).forEach(dbKey => {
+                    const item = myData.items[dbKey];
+                    myItemsDiv.innerHTML += `<span style="background:rgba(0,242,255,0.1); padding:3px 6px; margin:2px; display:inline-block; border-radius:4px; border:1px solid var(--neon); cursor:pointer;" onclick="TradeEngine.removeItemFromTrade('${dbKey}')">× ${item.icon} ${item.name}</span>`;
+                });
+            } else { myItemsDiv.innerText = "NO ITEMS SELECTED"; }
+
+            const myBtn = document.getElementById('btn-trade-confirm-my');
+            const theirBtn = document.getElementById('btn-trade-confirm-their');
+
+            if (myConfirmed) {
+                myBtn.innerText = "LOCKED & READY";
+                myBtn.style.background = "#222";
+                myBtn.style.color = "var(--green)";
+            } else {
+                myBtn.innerText = "CONFIRM OFFER";
+                myBtn.style.background = "var(--neon)";
+                myBtn.style.color = "black";
+            }
+
+            if (theirConfirmed) {
+                theirBtn.innerText = "PARTNER CONFIRMED";
+                theirBtn.style.background = "var(--pink)";
+                theirBtn.style.color = "white";
+            } else {
+                theirBtn.innerText = "NEGOTIATING...";
+                theirBtn.style.background = "#111";
+                theirBtn.style.color = "#444";
+            }
+
+            if (trade.senderConfirmed && trade.receiverConfirmed) {
+                document.getElementById('trade-final-accept-overlay').style.display = 'block';
+                const sAccept = trade.senderFinalAccept ? "✓ APPROVED" : "PENDING...";
+                const rAccept = trade.receiverFinalAccept ? "✓ APPROVED" : "PENDING...";
+                document.getElementById('trade-final-status-msg').innerHTML = `Sender: ${sAccept} | Receiver: ${rAccept}`;
+            } else {
+                document.getElementById('trade-final-accept-overlay').style.display = 'none';
+            }
+
+            if (trade.status === 'complete') {
+                this.exitTradeRoom("💥 MATRIX EXCHANGE FINALIZED! Assets transferred safely.");
+            }
+        });
+        this.drawTradeBackpackSelection();
+    },
+
+    async updateGemOffer(amount) {
+        let val = parseInt(amount) || 0;
+        if (val > App.gems) {
+            val = Math.floor(App.gems);
+            document.getElementById('trade-my-gems').value = val;
+        }
+        const updates = {};
+        updates[`system/trades/${this.currentTradeId}/${this.myRole}Offer/gems`] = val;
+        updates[`system/trades/${this.currentTradeId}/senderConfirmed`] = false;
+        updates[`system/trades/${this.currentTradeId}/receiverConfirmed`] = false;
+        updates[`system/trades/${this.currentTradeId}/lastUpdatedBy`] = App.u;
+        await DB.ref().update(updates);
+    },
+
+    drawTradeBackpackSelection() {
+        const container = document.getElementById('trade-backpack-selection');
+        container.innerHTML = '';
+        DB.ref(`users/${App.u}/backpack`).once('value', snap => {
+            if (!snap.exists()) { container.innerHTML = "<p style='font-size:0.55rem; color:#666;'>BACKPACK EMPTY</p>"; return; }
+            snap.forEach(child => {
+                const item = child.val();
+                const dbKey = child.key;
+                if (!this.selectedItems[dbKey]) {
+                    const block = document.createElement('div');
+                    block.className = 'bp-item';
+                    block.style.padding = '5px'; block.style.cursor = 'pointer'; block.style.border = '1px dashed #444';
+                    block.innerHTML = `<div style="font-size:1.2rem;">${item.icon}</div><div style="font-size:0.45rem;">${item.name}</div>`;
+                    block.onclick = () => this.addItemToTrade(dbKey, item);
+                    container.appendChild(block);
+                }
+            });
+        });
+    },
+
+    async addItemToTrade(dbKey, itemObj) {
+        this.selectedItems[dbKey] = itemObj;
+        const updates = {};
+        updates[`system/trades/${this.currentTradeId}/${this.myRole}Offer/items/${dbKey}`] = itemObj;
+        updates[`system/trades/${this.currentTradeId}/senderConfirmed`] = false;
+        updates[`system/trades/${this.currentTradeId}/receiverConfirmed`] = false;
+        updates[`system/trades/${this.currentTradeId}/lastUpdatedBy`] = App.u;
+        await DB.ref().update(updates);
+        this.drawTradeBackpackSelection();
+    },
+
+    async removeItemFromTrade(dbKey) {
+        delete this.selectedItems[dbKey];
+        await DB.ref(`system/trades/${this.currentTradeId}/${this.myRole}Offer/items/${dbKey}`).remove();
+        const updates = {};
+        updates[`system/trades/${this.currentTradeId}/senderConfirmed`] = false;
+        updates[`system/trades/${this.currentTradeId}/receiverConfirmed`] = false;
+        updates[`system/trades/${this.currentTradeId}/lastUpdatedBy`] = App.u;
+        await DB.ref().update(updates);
+        this.drawTradeBackpackSelection();
+    },
+
+    async clickConfirm() {
+        if (!this.canClickConfirm) return;
+        const snap = await DB.ref(`system/trades/${this.currentTradeId}`).once('value');
+        const trade = snap.val();
+        const partnerConfirmed = this.theirRole === 'sender' ? trade.senderConfirmed : trade.receiverConfirmed;
+
+        if (partnerConfirmed) {
+            this.canClickConfirm = false;
+            let ticksLeft = 5;
+            const btn = document.getElementById('btn-trade-confirm-my');
+            this.countdownTimer = setInterval(async () => {
+                ticksLeft--;
+                btn.innerText = `LOCKING IN (${ticksLeft}s)...`;
+                btn.style.background = "var(--gold)";
+                if (ticksLeft <= 0) {
+                    clearInterval(this.countdownTimer);
+                    this.canClickConfirm = true;
+                    const finalUpdate = {};
+                    finalUpdate[`system/trades/${this.currentTradeId}/${this.myRole}Confirmed`] = true;
+                    await DB.ref().update(finalUpdate);
+                }
+            }, 1000);
+        } else {
+            const instantUpdate = {};
+            instantUpdate[`system/trades/${this.currentTradeId}/${this.myRole}Confirmed`] = true;
+            await DB.ref().update(instantUpdate);
+        }
+    },
+
+    async clickFinalAccept() {
+        const finalUpdate = {};
+        finalUpdate[`system/trades/${this.currentTradeId}/${this.myRole}FinalAccept`] = true;
+        await DB.ref().update(finalUpdate);
+
+        const snap = await DB.ref(`system/trades/${this.currentTradeId}`).once('value');
+        const trade = snap.val();
+
+        if (trade.senderFinalAccept && trade.receiverFinalAccept) {
+            await DB.ref(`system/trades/${this.currentTradeId}/status`).set('processing');
+
+            const sUserSnap = await DB.ref('users/' + trade.sender).once('value');
+            const rUserSnap = await DB.ref('users/' + trade.receiver).once('value');
+
+            let sData = sUserSnap.val();
+            let rData = rUserSnap.val();
+
+            sData.gems = (sData.gems || 0) - trade.senderOffer.gems + trade.receiverOffer.gems;
+            rData.gems = (rData.gems || 0) - trade.receiverOffer.gems + trade.senderOffer.gems;
+
+            if (!sData.backpack) sData.backpack = {};
+            if (!rData.backpack) rData.backpack = {};
+
+            if (trade.senderOffer.items) {
+                Object.keys(trade.senderOffer.items).forEach(key => {
+                    delete sData.backpack[key];
+                    const newKey = 'TRADED_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+                    rData.backpack[newKey] = trade.senderOffer.items[key];
+                });
+            }
+            if (trade.receiverOffer.items) {
+                Object.keys(trade.receiverOffer.items).forEach(key => {
+                    delete rData.backpack[key];
+                    const newKey = 'TRADED_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+                    sData.backpack[newKey] = trade.receiverOffer.items[key];
+                });
+            }
+
+            await DB.ref('users/' + trade.sender).update({ gems: sData.gems, backpack: sData.backpack });
+            await DB.ref('users/' + trade.receiver).update({ gems: rData.gems, backpack: rData.backpack });
+            await DB.ref(`system/trades/${this.currentTradeId}`).update({ status: 'complete' });
+        }
+    },
+
+    async cancelTrade() {
+        if (!this.currentTradeId) return;
+        if (this.countdownTimer) clearInterval(this.countdownTimer);
+        await DB.ref(`system/trades/${this.currentTradeId}`).update({ status: 'cancelled' });
+    },
+
+    exitTradeRoom(msg) {
+        if (this.countdownTimer) clearInterval(this.countdownTimer);
+        if (this.activeTradeRef) this.activeTradeRef.off();
+        DB.ref('system/trades/' + this.currentTradeId).remove();
+        alert(msg);
+        this.currentTradeId = null; this.selectedItems = {}; this.canClickConfirm = true;
+        document.getElementById('trade-my-gems').value = '';
+        document.getElementById('trade-final-accept-overlay').style.display = 'none';
+        Router.go('core');
+    }
+};
+
+// AUTOMATIC PARAMETERIZED LINK LIFECYCLE PARSER
 window.onload = function() {
     const urlParams = new URLSearchParams(window.location.search);
     const autoUser = urlParams.get('autoUser');
