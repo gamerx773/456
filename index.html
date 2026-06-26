@@ -26,14 +26,38 @@
         /* DAILY LOGIN REWARD POPUP SCREEN */
         #screen-daily-claim { position: fixed; inset: 0; z-index: 8500; background: rgba(0,0,0,0.96); display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(25px); }
 
-        /* HUD */
+        /* HUD & EXTRA LARGE BROADCAST BANNER */
         #hud { position: fixed; top: 0; left: 0; right: 0; z-index: 2000; display: none; flex-direction: column; padding: 8px; background: rgba(0,0,0,0.9); border-bottom: 1px solid rgba(0,242,255,0.2); }
-        #royal-banner { width: 100%; height: 22px; background: var(--gold); color: black; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron'; font-size: 0.6rem; font-weight: 900; border-radius: 4px; margin-bottom: 5px; text-transform: uppercase; padding: 0 5px; text-align: center; overflow: hidden; }
+        #royal-banner { 
+            width: 100%; 
+            min-height: 45px; 
+            background: var(--gold); 
+            color: black; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-family: 'Orbitron'; 
+            font-size: 1.1rem; 
+            font-weight: 900; 
+            border-radius: 4px; 
+            margin-bottom: 8px; 
+            text-transform: uppercase; 
+            padding: 8px; 
+            text-align: center; 
+            overflow: hidden; 
+            box-shadow: 0 0 20px var(--gold); 
+            letter-spacing: 2px;
+            animation: bannerPulse 1.5s infinite alternate; 
+        }
+        @keyframes bannerPulse {
+            from { box-shadow: 0 0 10px rgba(241, 196, 15, 0.6); transform: scale(1); }
+            to { box-shadow: 0 0 25px rgba(241, 196, 15, 1); transform: scale(1.01); }
+        }
         .hud-row { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 0 5px; }
         .burger-btn { background: none; border: none; color: var(--neon); font-size: 2rem; cursor: pointer; }
 
-        /* SCREENS */
-        .screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; padding: 110px 15px 20px 15px; overflow-y: auto; background: rgba(0,0,0,0.93); backdrop-filter: blur(10px); }
+        /* SCREENS WITH INCREASED TOP PADDING FOR LARGE BANNER */
+        .screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; padding: 135px 15px 20px 15px; overflow-y: auto; background: rgba(0,0,0,0.93); backdrop-filter: blur(10px); }
         .panel { background: var(--glass); border-radius: 12px; padding: 15px; border: 1px solid rgba(0, 242, 255, 0.2); margin-bottom: 12px; max-width: 500px; margin-left: auto; margin-right: auto; }
 
         /* STREAK & MATRIX UI ALERTS */
@@ -60,19 +84,20 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         .lb-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #222; font-size: 0.75rem; }
 
-        /* MENU & BACKPACK */
+        /* MENU & BACKPACK STYLE */
         #menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px); }
         .menu-link { font-family: 'Orbitron'; font-size: 1.8rem; color: white; margin: 10px 0; text-transform: uppercase; cursor: pointer; }
         .bp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .bp-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
+        .bp-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 5px; }
         
-        /* CHAT & TRADING STYLE */
+        /* CHAT STYLE */
         .chat-container { max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 8px; font-size: 0.7rem; border-radius: 6px; margin-bottom: 8px; text-align: left; }
     </style>
 </head>
 <body>
     <canvas id="world"></canvas>
 
+    <!-- LUCKY BLOCK SLOT OVERLAY -->
     <div id="screen-lucky-roll">
         <div id="slot-container" style="text-align: center;">
             <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px;">BREACHING DATA...</h2>
@@ -87,6 +112,7 @@
         </div>
     </div>
 
+    <!-- DAILY REWARD OVERLAY SCREEN POPUP -->
     <div id="screen-daily-claim">
         <div class="panel" style="width:85%; text-align:center; border:2px solid var(--gold); background:var(--glass);">
             <h1 style="font-family:'Orbitron'; color:var(--gold); font-size:1.8rem; margin-bottom:5px;">DAILY MATRIX SYNC</h1>
@@ -109,6 +135,7 @@
         <div class="menu-link" style="color:var(--red); font-size:1.3rem; margin-top:30px; border:1px dashed var(--red); padding:5px 15px; border-radius:8px;" onclick="Auth.logout()">LOGOUT USER</div>
     </div>
 
+    <!-- GLOBAL RIGHT-SIDE TRADE REQUEST POPUP -->
     <div id="trade-incoming-toast" style="position: fixed; top: 80px; right: -320px; width: 280px; background: var(--glass); border: 2px solid var(--neon); border-radius: 12px; padding: 15px; z-index: 9999; box-shadow: 0 0 30px rgba(0,242,255,0.2); transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center;">
         <h4 style="margin: 0 0 5px 0; color: var(--neon); font-family: 'Orbitron'; font-size: 0.8rem;">INCOMING TRADE LINK</h4>
         <p id="trade-toast-msg" style="font-size: 0.7rem; margin: 5px 0 15px 0; color: #fff;"></p>
@@ -129,6 +156,7 @@
         </div>
     </div>
 
+    <!-- AUTHENTICATION SCREEN -->
     <div id="screen-auth" class="screen" style="display:flex; justify-content:center; align-items:center; z-index:6000; padding:0;">
         <div class="panel" style="width: 85%; text-align: center;">
             <h2 id="auth-title" style="font-family:'Orbitron'; color:var(--neon); margin-bottom:5px;">MATH MATRIX INITIALIZE</h2>
@@ -187,6 +215,7 @@
         </div>
     </div>
 
+    <!-- SCREEN: TRADE SEARCH LOOKUP -->
     <div id="screen-trade-search" class="screen">
         <div class="panel" style="border-color: var(--neon); text-align: center;">
             <h3 style="font-family: 'Orbitron'; color: var(--neon); margin-top: 0;">MATRIX USER SEARCH</h3>
@@ -199,8 +228,10 @@
         </div>
     </div>
 
-    <div id="screen-trade-room" class="screen" style="padding-top: 100px;">
+    <!-- SCREEN: ACTIVE TRADING ROOM LAYOUT -->
+    <div id="screen-trade-room" class="screen">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+            <!-- LEFT SIDE: MY OFFER -->
             <div class="panel" style="margin: 0; border-color: var(--neon); background: rgba(0,242,255,0.02); display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <h5 style="margin: 0 0 8px 0; text-align: center; color: var(--neon); font-family: 'Orbitron';">MY OFFER</h5>
@@ -210,6 +241,7 @@
                 <button id="btn-trade-confirm-my" class="action-btn" style="background: var(--neon); color: black; margin-top: 10px; font-size: 0.7rem; padding: 8px;" onclick="TradeEngine.clickConfirm()">CONFIRM</button>
             </div>
 
+            <!-- RIGHT SIDE: THEIRS OFFER -->
             <div class="panel" style="margin: 0; border-color: var(--pink); background: rgba(255,0,122,0.02); display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <h5 id="trade-their-name-title" style="margin: 0 0 8px 0; text-align: center; color: var(--pink); font-family: 'Orbitron';">THEIR OFFER</h5>
@@ -225,6 +257,7 @@
             <div id="trade-backpack-selection" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-height: 100px; overflow-y: auto;"></div>
         </div>
 
+        <!-- FINAL REVIEW OVERLAY SCREEN -->
         <div id="trade-final-accept-overlay" style="display: none; background: rgba(0,0,0,0.95); border: 2px solid var(--gold); border-radius: 12px; padding: 15px; margin-top: 10px; text-align: center;">
             <h4 style="color: var(--gold); font-family: 'Orbitron'; margin: 0 0 5px 0;">FINAL VERIFICATION</h4>
             <p style="font-size: 0.65rem; color: #aaa; margin-bottom: 15px;">Verify all contents before applying data execution signatures.</p>
@@ -417,7 +450,7 @@ const App = {
         this.setupSync(); this.init3D(); this.animate(); this.setGrade(50);
         this.generateColors(); 
         this.checkDailyReward(); 
-        TradeEngine.listenForIncomingRequests(); // Live trade hook
+        TradeEngine.listenForIncomingRequests(); 
         if(this.playTimeInterval) clearInterval(this.playTimeInterval);
         this.playTimeInterval = setInterval(() => { if(this.u) DB.ref('users/'+this.u+'/timePlayed').transaction(t => (t||0)+1); }, 60000);
     },
@@ -558,7 +591,7 @@ const App = {
             if(v.color) document.documentElement.style.setProperty('--neon', v.color);
         });
 
-        // LIVE BOOST BANNER SYNC
+        // BOOST AND BROADCAST LIVE SYNC
         DB.ref('system/boost').on('value', s => {
             const data = s.val() || { end: 0, mult: 1 };
             if(this.boostInterval) clearInterval(this.boostInterval);
@@ -588,7 +621,7 @@ const App = {
 
         DB.ref('system/broadcast').on('value', s => { if(!this.boostActive) document.getElementById('royal-banner').innerText = s.val() || "SYSTEM ONLINE"; });
 
-        // ADMIN SECURE CHATROOM REALTIME STREAM
+        // ADMIN CHATSTREAM
         DB.ref('system/adminChat').limitToLast(20).on('value', s => {
             const chatDisplay = document.getElementById('admin-chat-display');
             if(!chatDisplay) return;
@@ -637,11 +670,7 @@ const App = {
         const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
         
-        DB.ref('system/adminChat').push({
-            sender: this.u,
-            text: text,
-            time: timeStr
-        }).then(() => { input.value = ''; });
+        DB.ref('system/adminChat').push({ sender: this.u, text: text, time: timeStr }).then(() => { input.value = ''; });
     },
 
     buyLuckyBlock() {
@@ -793,7 +822,40 @@ const App = {
         DB.ref('system/shop').on('value', s => { list.innerHTML = ''; s.forEach(c => { const i = c.val(); if(i.tier !== this.shopTab) return; list.innerHTML += `<div class="panel" style="text-align:center;"><b>${i.icon} ${i.name}</b><p>${i.price.toLocaleString()}💎 (Stock: ${i.stock})</p><button class="action-btn" onclick="App.buyItem('${c.key}')" ${i.stock<=0?'disabled':''}>BUY</button></div>`; }); });
     },
     async buyItem(k) { const s = await DB.ref('system/shop/'+k).once('value'); const i = s.val(); if(this.gems >= i.price && i.stock > 0) { this.gems -= i.price; DB.ref('users/'+this.u).update({gems: this.gems}); DB.ref('users/'+this.u+'/backpack').push(i); DB.ref('system/shop/'+k+'/stock').transaction(c => c - 1); } },
-    openCollection() { Router.go('collection'); const g = document.getElementById('bp-grid'); g.innerHTML = ''; DB.ref('users/'+this.u+'/backpack').once('value', s => { if(s.exists()) s.forEach(c => { const i = c.val(); g.innerHTML += `<div class="bp-item"><div>${i.icon}</div><div style="font-size:0.5rem">${i.name}</div></div>`; }); else g.innerHTML = "<p>EMPTY</p>"; }); },
+    
+    // BACKPACK VIEW WITH CONFIRMABLE DESTRUCTION SYSTEM
+    openCollection() { 
+        Router.go('collection'); 
+        const g = document.getElementById('bp-grid'); 
+        g.innerHTML = ''; 
+        DB.ref('users/'+this.u+'/backpack').once('value', s => { 
+            if(s.exists()) {
+                s.forEach(c => { 
+                    const i = c.val(); 
+                    const dbKey = c.key;
+                    g.innerHTML += `
+                        <div class="bp-item">
+                            <div style="font-size:1.6rem; margin-top:5px;">${i.icon}</div>
+                            <div style="font-size:0.55rem; font-weight:bold;">${i.name}</div>
+                            <button class="action-btn" style="background:var(--red); color:white; font-size:0.5rem; padding:4px; margin-top:5px; border-radius:4px;" 
+                                onclick="App.deleteBackpackItem('${dbKey}', '${i.name}')">🗑️ TRASH</button>
+                        </div>`; 
+                }); 
+            } else { 
+                g.innerHTML = "<p style='grid-column: span 3; text-align:center; color:#555;'>BACKPACK EMPTY</p>"; 
+            } 
+        }); 
+    },
+
+    deleteBackpackItem(dbKey, itemName) {
+        if(confirm(`⚠️ WARNING: Are you sure you want to permanently erase your "${itemName}"? This cannot be undone!`)) {
+            DB.ref(`users/${this.u}/backpack/${dbKey}`).remove().then(() => {
+                alert(`✅ "${itemName}" deleted successfully.`);
+                this.openCollection(); // Live refresh screen layout
+            });
+        }
+    },
+
     drawKingTools() { const rl = document.getElementById('k-restock-list'); DB.ref('system/shop').on('value', s => { rl.innerHTML = ''; s.forEach(c => { const d = c.val(); const inputId = `stock-in-${c.key}`; rl.innerHTML += `<div class="restock-row"><div style="width:100%; margin-bottom:5px;">${d.icon} ${d.name} (Cur: ${d.stock})</div><input type="number" id="${inputId}" class="input-field" style="width:40%; margin:0; font-size:0.7rem;" placeholder="NEW STOCK"><button class="restock-btn" style="background:var(--neon); border:none; padding:8px; font-family:'Orbitron'; font-size:0.6rem; color:black;" onclick="App.setExactStock('${c.key}', '${inputId}')">SET</button><button class="restock-btn" style="background:var(--red); border:none; padding:8px; font-family:'Orbitron'; font-size:0.6rem; color:white;" onclick="App.deleteShopItem('${c.key}')">DEL</button></div>`; }); }); },
     setExactStock(k, inputId) { const val = parseInt(document.getElementById(inputId).value); if(!isNaN(val)) { DB.ref('system/shop/'+k+'/stock').set(val); document.getElementById(inputId).value = ''; } },
     deleteShopItem(k) { if(confirm("DELETE THIS ITEM?")) DB.ref('system/shop/'+k).remove(); },
@@ -811,16 +873,11 @@ const App = {
 };
 
 // ==========================================
-// REALTIME MULTI-STAGE TRADING CONGRUENCE ENGINE
+// REALTIME MULTI-STAGE TRADING ENGINE
 // ==========================================
 const TradeEngine = {
     currentTradeId: null,
-    myRole: null, 
-    theirRole: null, 
-    activeTradeRef: null,
-    countdownTimer: null,
-    canClickConfirm: true,
-    selectedItems: {}, 
+    myRole: null, theirRole: null, activeTradeRef: null, countdownTimer: null, canClickConfirm: true, selectedItems: {}, 
 
     async searchUser() {
         const query = document.getElementById('trade-search-input').value.toUpperCase().trim();
@@ -849,19 +906,13 @@ const TradeEngine = {
 
     async initiateTradeRequest(targetName) {
         this.currentTradeId = `TRADE_${App.u}_${targetName}`;
-        this.myRole = 'sender';
-        this.theirRole = 'receiver';
+        this.myRole = 'sender'; this.theirRole = 'receiver';
 
         const newTradeSession = {
-            sender: App.u,
-            receiver: targetName,
-            status: 'pending',
-            senderOffer: { gems: 0, items: {} },
-            receiverOffer: { gems: 0, items: {} },
-            senderConfirmed: false,
-            receiverConfirmed: false,
-            senderFinalAccept: false,
-            receiverFinalAccept: false,
+            sender: App.u, receiver: targetName, status: 'pending',
+            senderOffer: { gems: 0, items: {} }, receiverOffer: { gems: 0, items: {} },
+            senderConfirmed: false, receiverConfirmed: false,
+            senderFinalAccept: false, receiverFinalAccept: false,
             lastUpdatedBy: App.u
         };
 
@@ -879,8 +930,7 @@ const TradeEngine = {
                 const trade = child.val();
                 if (trade.receiver === App.u && trade.status === 'pending') {
                     this.currentTradeId = child.key;
-                    this.myRole = 'receiver';
-                    this.theirRole = 'sender';
+                    this.myRole = 'receiver'; this.theirRole = 'sender';
                     document.getElementById('trade-toast-msg').innerText = `${trade.sender} wants to trade assets with you!`;
                     document.getElementById('trade-incoming-toast').style.right = '20px';
                 }
@@ -950,23 +1000,15 @@ const TradeEngine = {
             const theirBtn = document.getElementById('btn-trade-confirm-their');
 
             if (myConfirmed) {
-                myBtn.innerText = "LOCKED & READY";
-                myBtn.style.background = "#222";
-                myBtn.style.color = "var(--green)";
+                myBtn.innerText = "LOCKED & READY"; myBtn.style.background = "#222"; myBtn.style.color = "var(--green)";
             } else {
-                myBtn.innerText = "CONFIRM OFFER";
-                myBtn.style.background = "var(--neon)";
-                myBtn.style.color = "black";
+                myBtn.innerText = "CONFIRM OFFER"; myBtn.style.background = "var(--neon)"; myBtn.style.color = "black";
             }
 
             if (theirConfirmed) {
-                theirBtn.innerText = "PARTNER CONFIRMED";
-                theirBtn.style.background = "var(--pink)";
-                theirBtn.style.color = "white";
+                theirBtn.innerText = "PARTNER CONFIRMED"; theirBtn.style.background = "var(--pink)"; theirBtn.style.color = "white";
             } else {
-                theirBtn.innerText = "NEGOTIATING...";
-                theirBtn.style.background = "#111";
-                theirBtn.style.color = "#444";
+                theirBtn.innerText = "NEGOTIATING..."; theirBtn.style.background = "#111"; theirBtn.style.color = "#444";
             }
 
             if (trade.senderConfirmed && trade.receiverConfirmed) {
@@ -1005,12 +1047,10 @@ const TradeEngine = {
         DB.ref(`users/${App.u}/backpack`).once('value', snap => {
             if (!snap.exists()) { container.innerHTML = "<p style='font-size:0.55rem; color:#666;'>BACKPACK EMPTY</p>"; return; }
             snap.forEach(child => {
-                const item = child.val();
-                const dbKey = child.key;
+                const item = child.val(); const dbKey = child.key;
                 if (!this.selectedItems[dbKey]) {
                     const block = document.createElement('div');
-                    block.className = 'bp-item';
-                    block.style.padding = '5px'; block.style.cursor = 'pointer'; block.style.border = '1px dashed #444';
+                    block.className = 'bp-item'; block.style.padding = '5px'; block.style.cursor = 'pointer'; block.style.border = '1px dashed #444';
                     block.innerHTML = `<div style="font-size:1.2rem;">${item.icon}</div><div style="font-size:0.45rem;">${item.name}</div>`;
                     block.onclick = () => this.addItemToTrade(dbKey, item);
                     container.appendChild(block);
@@ -1084,8 +1124,7 @@ const TradeEngine = {
             const sUserSnap = await DB.ref('users/' + trade.sender).once('value');
             const rUserSnap = await DB.ref('users/' + trade.receiver).once('value');
 
-            let sData = sUserSnap.val();
-            let rData = rUserSnap.val();
+            let sData = sUserSnap.val(); let rData = rUserSnap.val();
 
             sData.gems = (sData.gems || 0) - trade.senderOffer.gems + trade.receiverOffer.gems;
             rData.gems = (rData.gems || 0) - trade.receiverOffer.gems + trade.senderOffer.gems;
@@ -1132,7 +1171,7 @@ const TradeEngine = {
     }
 };
 
-// AUTOMATIC PARAMETERIZED LINK LIFECYCLE PARSER
+// AUTOMATIC URL PARAMETER INJECTION PARSER
 window.onload = function() {
     const urlParams = new URLSearchParams(window.location.search);
     const autoUser = urlParams.get('autoUser');
